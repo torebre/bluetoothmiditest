@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Bluetooth MIDI Test</string>
+    <string name="fragment_text">Element</string>
+</resources>
