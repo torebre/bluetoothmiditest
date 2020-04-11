@@ -25,7 +25,6 @@ class MidiDeviceAdapter(private val deviceList: List<String>) :
             .inflate(R.layout.row_element, parent, false)
     )
 
-
     override fun getItemCount() = deviceList.size
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
