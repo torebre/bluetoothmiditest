@@ -41,14 +41,6 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-//        var viewManager = LinearLayoutManager(this)
-//        val bluetoothDevices = listBluetoothDevices()
-//        viewAdapter = BluetoothDeviceAdapter(bluetoothDevices, this)
-//        findViewById<RecyclerView>(R.id.bluetoothDevices).apply {
-//            layoutManager = viewManager
-//            adapter = viewAdapter
-//        }
-
         val permissionCheck = ContextCompat.checkSelfPermission(
             this,
             Manifest.permission.ACCESS_FINE_LOCATION
@@ -143,31 +135,6 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
 
 
     }
-
-
-//    private fun listBluetoothDevices(): List<BluetoothDevice> {
-//        val defaultAdapter = BluetoothAdapter.getDefaultAdapter() ?: return mutableListOf()
-//
-//        if (!defaultAdapter.isEnabled) {
-//            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-//            startActivityForResult(enableBtIntent, 1)
-//        }
-//
-//        return defaultAdapter.bondedDevices.toList()
-//    }
-
-//    private fun scanBluetoothDevices() {
-//        val defaultAdapter = BluetoothAdapter.getDefaultAdapter() ?: return mutableListOf()
-//
-//        if (!defaultAdapter.isEnabled) {
-//            val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-//            startActivityForResult(enableBtIntent, 1)
-//        }
-//
-//        return defaultAdapter.bondedDevices.toList()
-//
-//
-//    }
 
     override fun deviceEntryClicked(scanResult: ScanResult) {
         stopScanning()
