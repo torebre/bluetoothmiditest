@@ -2,10 +2,14 @@ package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
 
-class MidiMessageTranslator(val receiver: MidiReceiver) {
+
+/**
+ * This is based on MidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
+ */
+class MidiMessageTranslator(private val receiver: MidiReceiver) {
     private var needed = 0
     private var inSysEx = false
-    private var runningStatus : Byte = 0
+    private var runningStatus: Byte = 0
     private var currentCount = 0
 
     private val buffer = ByteArray(3)
@@ -44,69 +48,82 @@ class MidiMessageTranslator(val receiver: MidiReceiver) {
     }
 
 
-    fun processMessage(msg: ByteArray?,
-                       offset: Int,
-                       count: Int,
-                       timestamp: Long) {
-        if(msg == null) {
+    fun processMessage(
+        msg: ByteArray?,
+        offset: Int,
+        count: Int,
+        timestamp: Long
+    ) {
+        if (msg == null) {
             return
         }
-        var sysExStartOffset = if(inSysEx) { offset } else { -1 }
+        var sysExStartOffset = if (inSysEx) {
+            offset
+        } else {
+            -1
+        }
         var tempOffset = offset
 
 
 
-        for(i in 0 until count) {
-            val currentByte = msg[i + offset]
+        for (i in 0 until count) {
+            val currentByte = msg[tempOffset]
             // TODO Test that this is correct
             val currentInt = transformByteToInt(currentByte)
 
-
-            if(currentInt > 0x80) {
-                if(currentInt < 0xF0) {
-                    // SysEx start
+            if (currentInt > 0x80) {
+                if (currentInt < 0xF0) {
+                    // Channel message
                     runningStatus = currentByte
                     currentCount = 1
                     needed = MidiConstants.getBytesPerMessage(currentInt) - 1
-
-                }
-                else if(currentInt < 0xF8) {
-                    if(currentInt == 0xF0) {
+                } else if (currentInt < 0xF8) {
+                    // System common
+                    if (currentInt == 0xF0) {
+                        // SysEx start
                         inSysEx = true
-                        sysExStartOffset = offset
-                    }
-                    else if(currentInt == 0xF7) {
+                        sysExStartOffset = tempOffset
+                    } else if (currentInt == 0xF7) {
                         // SysEx end
-                        if(inSysEx) {
-                            receiver.send(msg, sysExStartOffset, offset - sysExStartOffset + 1, timestamp)
+                        if (inSysEx) {
+                            receiver.send(
+                                msg,
+                                sysExStartOffset,
+                                tempOffset - sysExStartOffset + 1,
+                                timestamp
+                            )
                             inSysEx = false
                             sysExStartOffset = -1
                         }
-                    }
-                    else {
+                    } else {
                         buffer[0] = currentByte
                         runningStatus = 0
                         currentCount = 1
                         needed = MidiConstants.getBytesPerMessage(currentInt) - 1
                     }
+                } else {
+                    // Real-time
+                    if (inSysEx) {
+                        receiver.send(
+                            msg,
+                            sysExStartOffset,
+                            tempOffset - sysExStartOffset,
+                            timestamp
+                        )
+                        sysExStartOffset = tempOffset + 1
+                    }
+                    receiver.send(msg, tempOffset, 1, timestamp)
                 }
-                else {
-                    buffer[0] = currentByte
-                    runningStatus = 0
-                    currentCount = 1
-                    needed = MidiConstants.getBytesPerMessage(currentInt) - 1
-                }
-
-            }
-            else {
-                if(!inSysEx) {
+            } else {
+                // Data byte
+                if (!inSysEx) {
                     buffer[currentCount++] = currentByte
-                    if(--needed == 0) {
-                        if(runningStatus != 0.toByte()) {
+                    if (--needed == 0) {
+                        if (runningStatus != 0.toByte()) {
                             buffer[0] = runningStatus
                         }
                         receiver.send(buffer, 0, currentCount, timestamp)
-                        needed = MidiConstants.getBytesPerMessage(transformByteToInt(buffer[0]) - 1)
+                        needed = MidiConstants.getBytesPerMessage(transformByteToInt(buffer[0])) - 1
                         currentCount = 1
                     }
                 }
@@ -114,52 +131,12 @@ class MidiMessageTranslator(val receiver: MidiReceiver) {
             ++tempOffset
         }
 
-
-        if(sysExStartOffset in 0 until tempOffset) {
-            receiver.send(msg, sysExStartOffset, offset - sysExStartOffset, timestamp)
-
+        if (sysExStartOffset >= 0 && sysExStartOffset < tempOffset) {
+            receiver.send(msg, sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
         }
-
-
-
     }
 
-
-    private fun transformByteToInt(inputByte: Byte) = inputByte.toUInt().and(0x000000FF.toUInt()).toInt()
-
-    private fun translateMessage(data: ByteArray, offset: Int, count: Int) {
-        var tempOffset = offset
-        val statusByte = data[tempOffset++]
-        val status = transformByteToInt(statusByte)
-
-
-        // TODO
-        if (status >= 0xF0) {
-            val index = status and 0x0F
-            SystemCommandName.values()[index]
-        } else if (status >= 0x80) {
-            val index = status shr 4 and 0x07
-            ChannelCommandName.values()[index]
-        } else {
-            null
-        }
-
-        val numberOfBytes = MidiConstants.getBytesPerMessage(status) - 1
-
-        if((status >= 0x80) && (status < 0xF0)) {
-            // Channel message
-            val channel = status.and(0xF0)
-
-        }
-
-
-
-
-
-
-
-    }
-
-
+    private fun transformByteToInt(inputByte: Byte) =
+        inputByte.toUInt().and(0x000000FF.toUInt()).toInt()
 
 }
