@@ -11,9 +11,12 @@ import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
+import org.koin.android.ext.android.inject
 
 
 class ShowDataActivity : AppCompatActivity() {
+
+    val midiMessageHandler: MidiMessageHandler by inject()
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -86,6 +89,9 @@ class ShowDataActivity : AppCompatActivity() {
                                     count: Int,
                                     timestamp: Long
                                 ) {
+
+                                    midiMessageHandler.onSend(msg, offset, count, timestamp)
+
                                     runOnUiThread {
                                         dataView.append("Got message. Count: $count\n")
                                     }

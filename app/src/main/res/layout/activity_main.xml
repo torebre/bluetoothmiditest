@@ -6,17 +6,6 @@
     android:layout_height="match_parent"
     tools:context=".MainActivity">
 
-    <androidx.recyclerview.widget.RecyclerView
-        android:id="@+id/bluetoothDevices"
-        android:layout_width="403dp"
-        android:layout_height="643dp"
-        app:layout_constraintBottom_toTopOf="@+id/btnScan"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
-
     <Button
         android:id="@+id/btnScan"
         android:layout_width="wrap_content"
@@ -25,5 +14,40 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
+
+    <TextView
+        android:id="@+id/lblBluetoothMidiDevices"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="108dp"
+        android:text="Bluetooth MIDI devices"
+        app:layout_constraintBottom_toTopOf="@+id/spinnerBluetoothMidiDevices"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintVertical_bias="0.0" />
+
+    <TextView
+        android:id="@+id/lblMidiDevices"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="MIDI devices"
+        app:layout_constraintBottom_toTopOf="@+id/spinnerMidiDevices"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerBluetoothMidiDevices"
+        app:layout_constraintVertical_bias="0.064" />
+
+    <Spinner
+        android:id="@+id/spinnerMidiDevices"
+        android:layout_width="409dp"
+        android:layout_height="wrap_content"
+        tools:layout_editor_absoluteX="1dp"
+        tools:layout_editor_absoluteY="229dp" />
+
+    <Spinner
+        android:id="@+id/spinnerBluetoothMidiDevices"
+        android:layout_width="407dp"
+        android:layout_height="wrap_content"
+        tools:layout_editor_absoluteX="3dp"
+        tools:layout_editor_absoluteY="141dp" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
