@@ -2,8 +2,8 @@ package com.example.bluetoothmiditest
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
+import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
-import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
 import android.content.Context
@@ -12,22 +12,22 @@ import android.content.pm.PackageManager
 import android.media.midi.MidiDevice
 import android.media.midi.MidiDeviceInfo
 import android.media.midi.MidiManager
-import android.media.midi.MidiReceiver
 import android.os.Bundle
 import android.os.Handler
-import android.os.ParcelUuid
 import android.util.Log
+import android.view.View
+import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import org.koin.ext.getScopeName
+import kotlinx.coroutines.*
 import java.util.*
 
 
-class MainActivity : AppCompatActivity(), ConnectHandler {
+class MainActivity : AppCompatActivity() {
 
 
     companion object {
@@ -36,7 +36,10 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
     }
 
     //    private lateinit var viewAdapter: MidiDeviceAdapter
-    private lateinit var viewAdapter: BluetoothScanResults
+//    private lateinit var viewAdapter: BluetoothScanResults
+
+
+    private val foundBluetoothDevices = mutableSetOf<BluetoothDeviceData>()
 
     private var isScanning = false
 
@@ -72,11 +75,39 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
             startActivityForResult(enableBtIntent, 1)
         }
 
-        viewAdapter = BluetoothScanResults(this)
+//        viewAdapter = BluetoothScanResults(this)
         val spinnerBluetooth = findViewById<Spinner>(R.id.spinnerBluetoothMidiDevices)
 
         spinnerAdapterBluetooth = ArrayAdapter<BluetoothDeviceData>(spinnerBluetooth.context, android.R.layout.simple_spinner_item).also {
             it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        }
+
+
+        spinnerBluetooth.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
+            override fun onNothingSelected(parent: AdapterView<*>?) {
+//                TODO("Not yet implemented")
+
+            }
+
+            override fun onItemSelected(
+                parent: AdapterView<*>?,
+                view: View?,
+                position: Int,
+                id: Long
+            ) {
+                spinnerAdapterBluetooth.getItem(position)?.let {
+
+                    // TODO
+
+//                        withContext(Dispatchers.Default) {
+                            deviceEntryClicked(it.bluetoothDevice)
+//                        }
+
+
+                }
+
+            }
+
         }
 
         spinnerBluetooth.adapter = spinnerAdapterBluetooth
@@ -84,6 +115,7 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
         spinnerAdapterMidiData = ArrayAdapter<MidiDeviceData>(spinnerMidiDevices.context, android.R.layout.simple_spinner_item).also {
             it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
+
 
         setupMidiDevices()
 
@@ -121,7 +153,7 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
         Log.i("Scanner", "Start scan")
 
         leScanner.startScan(
-            listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(MIDI_OVER_BTLE_UUID)).build()),
+            emptyList(), // listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(MIDI_OVER_BTLE_UUID)).build()),
             ScanSettings.Builder().build(),
             object : ScanCallback() {
 
@@ -132,8 +164,13 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
                     Log.i("Scanner", "Scan result. Callback type: ${callbackType}. Result: $result")
                     result?.apply {
                         runOnUiThread {
-                            viewAdapter.addScanResult(this)
-                            viewAdapter.notifyDataSetChanged()
+                            BluetoothDeviceData(device).let {
+                                if(!foundBluetoothDevices.contains(it)) {
+                                    foundBluetoothDevices.add(it)
+                                    spinnerAdapterBluetooth.add(it)
+                                    spinnerAdapterBluetooth.notifyDataSetChanged()
+                                }
+                            }
                         }
                     }
                 }
@@ -142,8 +179,15 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
                     Log.i("Scanner", "Scan results. Results: $results")
 
                     results?.apply {
-                        filterNotNull().forEach { viewAdapter.addScanResult(it) }
-                        viewAdapter.notifyDataSetChanged()
+                        filterNotNull().forEach {
+                            BluetoothDeviceData(it.device).let { bluetoothDeviceData ->
+                                if(!foundBluetoothDevices.contains(bluetoothDeviceData)) {
+                                    foundBluetoothDevices.add(bluetoothDeviceData)
+                                    spinnerAdapterBluetooth.add(bluetoothDeviceData)
+                                }
+                                spinnerAdapterBluetooth.notifyDataSetChanged()
+                            }
+                        }
                     }
                 }
 
@@ -189,7 +233,7 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
 
 
 
-    override fun deviceEntryClicked(scanResult: ScanResult) {
+    fun deviceEntryClicked(bluetoothDevice: BluetoothDevice) {
         stopScanning()
 
 //        val openBluetoothDeviceIntent =
@@ -197,7 +241,7 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
 //                putExtra(Intent.EXTRA_TEXT, scanResult.device)
 //            }
 //
-//        Log.i("Bluetooth", "Entry clicked: $scanResult")
+        Log.i("Bluetooth", "Entry clicked: $bluetoothDevice")
 //
 //        startActivity(openBluetoothDeviceIntent)
 
@@ -207,7 +251,7 @@ class MainActivity : AppCompatActivity(), ConnectHandler {
 
 //        dataView.append("Opening device: $bluetoothDevice\n")
 
-        midiManager.openBluetoothDevice(scanResult.device,
+        midiManager.openBluetoothDevice(bluetoothDevice,
             { device ->
                 Log.i("Bluetooth", "Device opened: $device")
 

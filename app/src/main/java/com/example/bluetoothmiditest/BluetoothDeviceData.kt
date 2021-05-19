@@ -1,3 +1,11 @@
 package com.example.bluetoothmiditest
 
-data class BluetoothDeviceData(val name: String)
+import android.bluetooth.BluetoothDevice
+
+data class BluetoothDeviceData(val bluetoothDevice: BluetoothDevice) {
+
+    override fun toString(): String {
+        return "Name: ${bluetoothDevice.name}. Address: ${bluetoothDevice.address}"
+    }
+
+}
