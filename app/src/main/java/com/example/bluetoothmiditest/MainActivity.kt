@@ -9,7 +9,6 @@ import android.bluetooth.le.ScanSettings
 import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.midi.MidiDevice
 import android.media.midi.MidiDeviceInfo
 import android.media.midi.MidiManager
 import android.os.Bundle
@@ -23,7 +22,6 @@ import android.widget.Spinner
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import kotlinx.coroutines.*
 import java.util.*
 
 
@@ -34,9 +32,6 @@ class MainActivity : AppCompatActivity() {
         private const val SCAN_PERIOD = 10000L
         private val MIDI_OVER_BTLE_UUID = UUID.fromString("03B80E5A-EDE8-4B33-A751-6CE34EC4C700")
     }
-
-    //    private lateinit var viewAdapter: MidiDeviceAdapter
-//    private lateinit var viewAdapter: BluetoothScanResults
 
 
     private val foundBluetoothDevices = mutableSetOf<BluetoothDeviceData>()
@@ -75,7 +70,6 @@ class MainActivity : AppCompatActivity() {
             startActivityForResult(enableBtIntent, 1)
         }
 
-//        viewAdapter = BluetoothScanResults(this)
         val spinnerBluetooth = findViewById<Spinner>(R.id.spinnerBluetoothMidiDevices)
 
         spinnerAdapterBluetooth = ArrayAdapter<BluetoothDeviceData>(spinnerBluetooth.context, android.R.layout.simple_spinner_item).also {
@@ -153,7 +147,7 @@ class MainActivity : AppCompatActivity() {
         Log.i("Scanner", "Start scan")
 
         leScanner.startScan(
-            emptyList(), // listOf(ScanFilter.Builder().setServiceUuid(ParcelUuid(MIDI_OVER_BTLE_UUID)).build()),
+            emptyList(),
             ScanSettings.Builder().build(),
             object : ScanCallback() {
 
@@ -194,11 +188,8 @@ class MainActivity : AppCompatActivity() {
                 override fun onScanFailed(errorCode: Int) {
                     Log.e("Scanner", "Scan failed. Error code: $errorCode")
                 }
-
-
             }
         )
-
 
     }
 
@@ -225,10 +216,6 @@ class MainActivity : AppCompatActivity() {
             }
 
         }, null)
-
-
-
-
     }
 
 
@@ -236,70 +223,24 @@ class MainActivity : AppCompatActivity() {
     fun deviceEntryClicked(bluetoothDevice: BluetoothDevice) {
         stopScanning()
 
-//        val openBluetoothDeviceIntent =
-//            Intent(applicationContext, ShowDataActivity::class.java).apply {
-//                putExtra(Intent.EXTRA_TEXT, scanResult.device)
-//            }
-//
         Log.i("Bluetooth", "Entry clicked: $bluetoothDevice")
-//
-//        startActivity(openBluetoothDeviceIntent)
-
 
         val midiManager =
             applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
-
-//        dataView.append("Opening device: $bluetoothDevice\n")
 
         midiManager.openBluetoothDevice(bluetoothDevice,
             { device ->
                 Log.i("Bluetooth", "Device opened: $device")
 
-                midiManager.openDevice(device.info, object : MidiManager.OnDeviceOpenedListener {
-
-                    override fun onDeviceOpened(device: MidiDevice?) {
-                        if (device == null) {
-                            Log.i("Midi", "Device is null")
-
-//                            runOnUiThread {
-//                                dataView.append("Device is null\n")
-//                            }
-
-                            return
-                        }
-
-
-//                        device?.let {
-//                            it.info.ports.forEach {
-//                                runOnUiThread {
-//                                    dataView.append("""
-//                                        Name: ${it.name}
-//                                        Type: ${it.type}
-//                                        Port number: ${it.portNumber}\n
-//                                    """.trimIndent())
-//                                }
-//                            }
-//                        }
-
-                        val outputPort = device.openOutputPort(0)
-
-                        // TODO
-
+                val openMidiDeviceIntent =
+                    Intent(applicationContext, ShowDataActivity::class.java).apply {
+                        putExtra(Intent.EXTRA_TEXT, device.info.id)
                     }
-
-
-                }, null)
-
-
-
-
-//                listMidiDevices(dataView)
-            }, Handler(Handler.Callback { msg ->
+                startActivity(openMidiDeviceIntent)
+            }, Handler { msg ->
                 Log.i("Bluetooth", "Message: $msg")
-
-//                dataView.append("$msg\n")
                 true
-            })
+            }
         )
 
 
