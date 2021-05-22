@@ -2,23 +2,21 @@ package com.example.bluetoothmiditest
 
 import android.Manifest
 import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
 import android.bluetooth.le.ScanCallback
+import android.bluetooth.le.ScanFilter
 import android.bluetooth.le.ScanResult
 import android.bluetooth.le.ScanSettings
-import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.media.midi.MidiDeviceInfo
-import android.media.midi.MidiManager
 import android.os.Bundle
-import android.os.Handler
+import android.os.ParcelUuid
 import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
@@ -33,14 +31,18 @@ class MainActivity : AppCompatActivity() {
         private val MIDI_OVER_BTLE_UUID = UUID.fromString("03B80E5A-EDE8-4B33-A751-6CE34EC4C700")
     }
 
+    private val scanFilter =
+        ScanFilter.Builder().setServiceUuid(ParcelUuid(MIDI_OVER_BTLE_UUID)).build()
 
-    private val foundBluetoothDevices = mutableSetOf<BluetoothDeviceData>()
+
+    private val bluetoothScanCallback = BluetoothScanCallback()
+
+
+    private var currentlySelectedBluetoothDevice: BluetoothDeviceData? = null
 
     private var isScanning = false
 
-
     private lateinit var spinnerAdapterBluetooth: ArrayAdapter<BluetoothDeviceData>
-    private lateinit var spinnerAdapterMidiData: ArrayAdapter<MidiDeviceData>
 
     private val BluetoothAdapter.isDisabled: Boolean
         get() = !isEnabled
@@ -64,23 +66,39 @@ class MainActivity : AppCompatActivity() {
             )
         }
 
-
         BluetoothAdapter.getDefaultAdapter()?.takeIf { it.isDisabled }?.apply {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
-            startActivityForResult(enableBtIntent, 1)
+            registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
+                // TODO Is it necessary to do anything here?
+
+            }.launch(enableBtIntent)
+        }
+
+        val connectButton = findViewById<Button>(R.id.btnConnect)
+        connectButton.isEnabled = false
+        connectButton.setOnClickListener {
+            currentlySelectedBluetoothDevice?.let {
+                val openMidiDeviceIntent =
+                    Intent(applicationContext, ShowDataActivity::class.java).apply {
+                        putExtra(Intent.EXTRA_TEXT, it.bluetoothDevice)
+                    }
+                startActivity(openMidiDeviceIntent)
+
+            }
         }
 
         val spinnerBluetooth = findViewById<Spinner>(R.id.spinnerBluetoothMidiDevices)
 
-        spinnerAdapterBluetooth = ArrayAdapter<BluetoothDeviceData>(spinnerBluetooth.context, android.R.layout.simple_spinner_item).also {
+        spinnerAdapterBluetooth = ArrayAdapter<BluetoothDeviceData>(
+            spinnerBluetooth.context,
+            android.R.layout.simple_spinner_item
+        ).also {
             it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         }
 
-
-        spinnerBluetooth.onItemSelectedListener = object: AdapterView.OnItemSelectedListener {
+        spinnerBluetooth.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
             override fun onNothingSelected(parent: AdapterView<*>?) {
-//                TODO("Not yet implemented")
-
+                connectButton.isEnabled = false
             }
 
             override fun onItemSelected(
@@ -89,30 +107,16 @@ class MainActivity : AppCompatActivity() {
                 position: Int,
                 id: Long
             ) {
+                stopScanning()
                 spinnerAdapterBluetooth.getItem(position)?.let {
-
-                    // TODO
-
-//                        withContext(Dispatchers.Default) {
-                            deviceEntryClicked(it.bluetoothDevice)
-//                        }
-
+                    currentlySelectedBluetoothDevice = it
+                    connectButton.isEnabled = true
 
                 }
-
             }
-
         }
 
         spinnerBluetooth.adapter = spinnerAdapterBluetooth
-        val spinnerMidiDevices = findViewById<Spinner>(R.id.spinnerMidiDevices)
-        spinnerAdapterMidiData = ArrayAdapter<MidiDeviceData>(spinnerMidiDevices.context, android.R.layout.simple_spinner_item).also {
-            it.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        }
-
-
-        setupMidiDevices()
-
 
         val scanButton = findViewById<Button>(R.id.btnScan)
         scanButton.setOnClickListener {
@@ -122,7 +126,6 @@ class MainActivity : AppCompatActivity() {
 
                 stopScanning()
                 scanButton.setText(R.string.scan)
-
             } else {
 
                 Log.i("Scanner", "Starting scanning")
@@ -130,11 +133,8 @@ class MainActivity : AppCompatActivity() {
                 BluetoothAdapter.getDefaultAdapter()?.let { scanLeDevices(it) }
                 scanButton.setText(R.string.stop)
             }
-
         }
-
     }
-
 
     private fun scanLeDevices(bluetoothAdapter: BluetoothAdapter) {
         if (isScanning) {
@@ -147,138 +147,60 @@ class MainActivity : AppCompatActivity() {
         Log.i("Scanner", "Start scan")
 
         leScanner.startScan(
-            emptyList(),
+            listOf(scanFilter),
             ScanSettings.Builder().build(),
-            object : ScanCallback() {
-
-                override fun onScanResult(
-                    callbackType: Int,
-                    result: ScanResult?
-                ) {
-                    Log.i("Scanner", "Scan result. Callback type: ${callbackType}. Result: $result")
-                    result?.apply {
-                        runOnUiThread {
-                            BluetoothDeviceData(device).let {
-                                if(!foundBluetoothDevices.contains(it)) {
-                                    foundBluetoothDevices.add(it)
-                                    spinnerAdapterBluetooth.add(it)
-                                    spinnerAdapterBluetooth.notifyDataSetChanged()
-                                }
-                            }
-                        }
-                    }
-                }
-
-                override fun onBatchScanResults(results: List<ScanResult?>?) {
-                    Log.i("Scanner", "Scan results. Results: $results")
-
-                    results?.apply {
-                        filterNotNull().forEach {
-                            BluetoothDeviceData(it.device).let { bluetoothDeviceData ->
-                                if(!foundBluetoothDevices.contains(bluetoothDeviceData)) {
-                                    foundBluetoothDevices.add(bluetoothDeviceData)
-                                    spinnerAdapterBluetooth.add(bluetoothDeviceData)
-                                }
-                                spinnerAdapterBluetooth.notifyDataSetChanged()
-                            }
-                        }
-                    }
-                }
-
-                override fun onScanFailed(errorCode: Int) {
-                    Log.e("Scanner", "Scan failed. Error code: $errorCode")
-                }
-            }
+            bluetoothScanCallback
         )
-
     }
-
-
-    private fun setupMidiDevices() {
-        val midiManager = getSystemService(Context.MIDI_SERVICE) as MidiManager
-
-        midiManager.registerDeviceCallback(object: MidiManager.DeviceCallback() {
-
-            override fun onDeviceAdded(device: MidiDeviceInfo?) {
-                device?.let {deviceInfo ->
-                    deviceInfo.properties[MidiDeviceInfo.PROPERTY_NAME].let {
-                        spinnerAdapterMidiData.add(MidiDeviceData(it as String))
-                    }
-                }
-            }
-
-            override fun onDeviceRemoved(device: MidiDeviceInfo?) {
-                device?.let {deviceInfo ->
-                    deviceInfo.properties[MidiDeviceInfo.PROPERTY_NAME].let {
-                        spinnerAdapterMidiData.remove(MidiDeviceData(it as String))
-                    }
-                }
-            }
-
-        }, null)
-    }
-
-
-
-    fun deviceEntryClicked(bluetoothDevice: BluetoothDevice) {
-        stopScanning()
-
-        Log.i("Bluetooth", "Entry clicked: $bluetoothDevice")
-
-        val midiManager =
-            applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
-
-        midiManager.openBluetoothDevice(bluetoothDevice,
-            { device ->
-                Log.i("Bluetooth", "Device opened: $device")
-
-                val openMidiDeviceIntent =
-                    Intent(applicationContext, ShowDataActivity::class.java).apply {
-                        putExtra(Intent.EXTRA_TEXT, device.info.id)
-                    }
-                startActivity(openMidiDeviceIntent)
-            }, Handler { msg ->
-                Log.i("Bluetooth", "Message: $msg")
-                true
-            }
-        )
-
-
-
-
-    }
-
-
-    private fun connectToMidiDevice() {
-
-        // TODO
-
-//            Log.i("Midi", "Opened output port: $outputPort")
-//
-//            outputPort.connect(object : MidiReceiver() {
-//                override fun onSend(
-//                    msg: ByteArray?,
-//                    offset: Int,
-//                    count: Int,
-//                    timestamp: Long
-//                ) {
-//
-//                    midiMessageHandler.onSend(msg, offset, count, timestamp)
-//
-//                }
-//            })
-    }
-
-
 
     private fun stopScanning() {
-        BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner.stopScan(object : ScanCallback() {
-            // Do nothing
-
-        })
+        BluetoothAdapter.getDefaultAdapter().bluetoothLeScanner.stopScan(bluetoothScanCallback)
         isScanning = false
+    }
 
 
+    inner class BluetoothScanCallback : ScanCallback() {
+
+        private val foundBluetoothDevices = mutableSetOf<BluetoothDeviceData>()
+
+
+        override fun onScanResult(
+            callbackType: Int,
+            result: ScanResult?
+        ) {
+            Log.i("Scanner", "Scan result. Callback type: ${callbackType}. Result: $result")
+            result?.apply {
+                this@MainActivity.runOnUiThread {
+                    BluetoothDeviceData(device).let {
+                        if (!foundBluetoothDevices.contains(it)) {
+                            foundBluetoothDevices.add(it)
+                            spinnerAdapterBluetooth.add(it)
+                            spinnerAdapterBluetooth.notifyDataSetChanged()
+                        }
+                    }
+                }
+            }
+        }
+
+        override fun onBatchScanResults(results: List<ScanResult?>?) {
+            Log.i("Scanner", "Scan results. Results: $results")
+
+            results?.apply {
+                filterNotNull().forEach {
+                    BluetoothDeviceData(it.device).let { bluetoothDeviceData ->
+                        if (!foundBluetoothDevices.contains(bluetoothDeviceData)) {
+                            foundBluetoothDevices.add(bluetoothDeviceData)
+                            spinnerAdapterBluetooth.add(bluetoothDeviceData)
+                        }
+                        spinnerAdapterBluetooth.notifyDataSetChanged()
+                    }
+                }
+            }
+        }
+
+        override fun onScanFailed(errorCode: Int) {
+            Log.e("Scanner", "Scan failed. Error code: $errorCode")
+        }
     }
 
 }
