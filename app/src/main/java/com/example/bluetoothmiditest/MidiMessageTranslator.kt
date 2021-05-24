@@ -6,7 +6,7 @@ import android.media.midi.MidiReceiver
 /**
  * This is based on MidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
  */
-class MidiMessageTranslator(private val receiver: MidiReceiver) {
+class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiReceiver() {
     private var needed = 0
     private var inSysEx = false
     private var runningStatus: Byte = 0
@@ -45,18 +45,19 @@ class MidiMessageTranslator(private val receiver: MidiReceiver) {
             ACTIVE_SENSING,
             RESET
         }
+
+        @ExperimentalUnsignedTypes
+        fun transformByteToInt(inputByte: Byte) =
+            inputByte.toUInt().and(0x000000FF.toUInt()).toInt()
     }
 
 
-    fun processMessage(
-        msg: ByteArray?,
+    override fun onSend(
+        msg: ByteArray,
         offset: Int,
         count: Int,
         timestamp: Long
     ) {
-        if (msg == null) {
-            return
-        }
         var sysExStartOffset = if (inSysEx) {
             offset
         } else {
@@ -136,7 +137,7 @@ class MidiMessageTranslator(private val receiver: MidiReceiver) {
         }
     }
 
-    private fun transformByteToInt(inputByte: Byte) =
-        inputByte.toUInt().and(0x000000FF.toUInt()).toInt()
+
+
 
 }

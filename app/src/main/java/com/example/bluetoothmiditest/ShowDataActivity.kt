@@ -7,16 +7,17 @@ import android.media.midi.MidiDevice
 import android.media.midi.MidiManager
 import android.media.midi.MidiReceiver
 import android.os.Bundle
+import android.os.Environment
 import android.os.Handler
 import android.util.Log
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import org.koin.android.ext.android.inject
 
 
 class ShowDataActivity : AppCompatActivity() {
 
-    val midiMessageHandler: MidiMessageHandler by inject()
+    private lateinit var midiMessageHandler: MidiMessageHandler // by inject()
+    private lateinit var midiMessageTranslator: MidiMessageTranslator
 
     private var openedMidiDevice: MidiDevice? = null
 
@@ -24,10 +25,24 @@ class ShowDataActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val outputFile = getExternalFilesDir(null)?.let {
+            if(Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED) {
+                getExternalFilesDir(null)?.resolve( "midi_output.txt")
+            }
+            else {
+                null
+            }
+        }
+
+        Log.i("ShowData", "Output file: $outputFile")
+
+        midiMessageHandler = MidiMessageHandlerImpl(outputFile)
+        midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
+        midiMessageHandler.store(true)
+
         setContentView(R.layout.show_midi_data)
 
         val dataView = findViewById<TextView>(R.id.midiData)
-
         if(intent.extras == null) {
             Log.e("ShowData", "No address given")
             return
@@ -48,6 +63,7 @@ class ShowDataActivity : AppCompatActivity() {
         openedMidiDevice?.run {
             close()
         }
+        midiMessageHandler.close()
     }
 
     private fun openBluetoothMidiDevice(bluetoothDevice: BluetoothDevice, dataView: TextView, midiManager: MidiManager) {
@@ -84,8 +100,9 @@ class ShowDataActivity : AppCompatActivity() {
                             count: Int,
                             timestamp: Long
                         ) {
-
-                            midiMessageHandler.onSend(msg, offset, count, timestamp)
+                            msg?.let {
+                                midiMessageTranslator.onSend(msg, offset, count, timestamp)
+                            }
 
                             runOnUiThread {
                                 dataView.append("Got message. Count: $count\n")
@@ -98,8 +115,6 @@ class ShowDataActivity : AppCompatActivity() {
                 true
             }
         )
-
     }
-
 
 }

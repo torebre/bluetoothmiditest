@@ -9,6 +9,7 @@ import android.bluetooth.le.ScanSettings
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
+import android.os.Environment
 import android.os.ParcelUuid
 import android.util.Log
 import android.view.View
@@ -20,6 +21,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import java.nio.file.Paths
 import java.util.*
 
 
@@ -36,7 +38,6 @@ class MainActivity : AppCompatActivity() {
 
 
     private val bluetoothScanCallback = BluetoothScanCallback()
-
 
     private var currentlySelectedBluetoothDevice: BluetoothDeviceData? = null
 
@@ -83,12 +84,10 @@ class MainActivity : AppCompatActivity() {
                         putExtra(Intent.EXTRA_TEXT, it.bluetoothDevice)
                     }
                 startActivity(openMidiDeviceIntent)
-
             }
         }
 
         val spinnerBluetooth = findViewById<Spinner>(R.id.spinnerBluetoothMidiDevices)
-
         spinnerAdapterBluetooth = ArrayAdapter<BluetoothDeviceData>(
             spinnerBluetooth.context,
             android.R.layout.simple_spinner_item

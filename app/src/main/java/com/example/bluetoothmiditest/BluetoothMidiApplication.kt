@@ -9,7 +9,7 @@ class BluetoothMidiApplication: Application() {
 
     private val messageModule = module {
 
-        single<MidiMessageHandler> { MidiMessageHandlerImpl() }
+//        single<MidiMessageHandler> { MidiMessageHandlerImpl() }
 
 
     }

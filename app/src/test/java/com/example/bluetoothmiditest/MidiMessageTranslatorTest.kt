@@ -40,7 +40,7 @@ class MidiMessageTranslatorTest {
         val messageTranslator = MidiMessageTranslator(midiReceiver)
         val data = byteArrayOf(0x90.toByte(), 0x45, 0x32)
 
-        messageTranslator.processMessage(data, 0, data.size, 0)
+        messageTranslator.onSend(data, 0, data.size, 0)
 
         verify(midiReceiver).send(
             any(ByteArray::class.java),
@@ -127,7 +127,7 @@ class MidiMessageTranslatorTest {
 
         val framer = MidiMessageTranslator(midiReceiver)
         for (message in original) {
-            framer.processMessage(
+            framer.onSend(
                 message.data, 0, message.data.size,
                 message.timestamp
             )
