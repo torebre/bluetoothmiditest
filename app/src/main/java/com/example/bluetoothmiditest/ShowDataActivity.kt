@@ -6,17 +6,28 @@ import android.content.Intent
 import android.media.midi.MidiDevice
 import android.media.midi.MidiManager
 import android.media.midi.MidiReceiver
+import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
 import android.util.Log
+import android.widget.Button
 import android.widget.TextView
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import java.io.BufferedOutputStream
+import java.nio.charset.StandardCharsets
 
 
 class ShowDataActivity : AppCompatActivity() {
 
     private lateinit var midiMessageHandler: MidiMessageHandler // by inject()
     private lateinit var midiMessageTranslator: MidiMessageTranslator
+    private val dataStorer = DataMemoryStore()
+
+    private val getFileUrl =
+        registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
+            activityResult.data?.data?.let { saveData(it) }
+        }
 
     private var openedMidiDevice: MidiDevice? = null
 
@@ -24,7 +35,6 @@ class ShowDataActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val dataStorer = DataStorer(applicationContext)
         midiMessageHandler = MidiMessageHandlerImpl(dataStorer)
         midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
         midiMessageHandler.store(true)
@@ -32,20 +42,33 @@ class ShowDataActivity : AppCompatActivity() {
         setContentView(R.layout.show_midi_data)
 
         val dataView = findViewById<TextView>(R.id.midiData)
-        if(intent.extras == null) {
+        if (intent.extras == null) {
             Log.e("ShowData", "No address given")
             return
         }
 
-            intent.extras?.let { bundle ->
-                bundle[Intent.EXTRA_TEXT]?.let {
-                    val bluetoothDevice = it as BluetoothDevice
-                    val midiManager =
-                        applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
-                    openBluetoothMidiDevice(bluetoothDevice, dataView, midiManager)
-                }
+        intent.extras?.let { bundle ->
+            bundle[Intent.EXTRA_TEXT]?.let {
+                val bluetoothDevice = it as BluetoothDevice
+                val midiManager =
+                    applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
+                openBluetoothMidiDevice(bluetoothDevice, dataView, midiManager)
             }
         }
+
+        val button = findViewById<Button>(R.id.btnSave)
+        button.setOnClickListener {
+            dataStorer.getData().takeIf { it.isNotBlank() }?.let {
+                val createDocumentIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                    addCategory(Intent.CATEGORY_OPENABLE)
+                    type = "application/text"
+                    putExtra(Intent.EXTRA_TITLE, "midi_output.txt")
+                }
+                getFileUrl.launch(createDocumentIntent)
+            }
+        }
+
+    }
 
     override fun onDestroy() {
         super.onDestroy()
@@ -55,7 +78,11 @@ class ShowDataActivity : AppCompatActivity() {
         midiMessageHandler.close()
     }
 
-    private fun openBluetoothMidiDevice(bluetoothDevice: BluetoothDevice, dataView: TextView, midiManager: MidiManager) {
+    private fun openBluetoothMidiDevice(
+        bluetoothDevice: BluetoothDevice,
+        dataView: TextView,
+        midiManager: MidiManager
+    ) {
         midiManager.openBluetoothDevice(bluetoothDevice,
             { device ->
                 Log.i("Bluetooth", "Device opened: $device")
@@ -65,11 +92,13 @@ class ShowDataActivity : AppCompatActivity() {
                 device.let {
                     it.info.ports.forEach {
                         runOnUiThread {
-                            dataView.append("""
+                            dataView.append(
+                                """
                                         Name: ${it.name}
                                         Type: ${it.type}
                                         Port number: ${it.portNumber}\n
-                                    """.trimIndent())
+                                    """.trimIndent()
+                            )
                         }
                     }
                 }
@@ -104,6 +133,19 @@ class ShowDataActivity : AppCompatActivity() {
                 true
             }
         )
+    }
+
+
+    private fun saveData(uri: Uri) {
+        dataStorer.getData().takeIf { it.isNotBlank() }?.let { midiTextData ->
+            contentResolver.openOutputStream(uri)?.use { outputStream ->
+                BufferedOutputStream(outputStream).let { bufferedOutputStream ->
+                    bufferedOutputStream.writer(StandardCharsets.UTF_8).use {
+                        it.write(midiTextData)
+                    }
+                }
+            }
+        }
     }
 
 }

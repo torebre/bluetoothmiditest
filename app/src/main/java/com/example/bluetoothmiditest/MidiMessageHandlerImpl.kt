@@ -3,22 +3,17 @@ package com.example.bluetoothmiditest
 import java.io.Closeable
 
 
-class MidiMessageHandlerImpl(private val dataStore: DataStorer): MidiMessageHandler, Closeable {
+class MidiMessageHandlerImpl(private val dataStore: DataStore) : MidiMessageHandler, Closeable {
     private var storeMode = false
 
 
-
-
     override fun send(msg: ByteArray, offset: Int, count: Int, timestamp: Long) {
-        if(storeMode) {
+        if (storeMode) {
             dataStore.store(translateMidiMessage(msg, offset), timestamp)
         }
-
-//        Log.i("MessageHandler", "Got message ${msg}")
     }
 
-
-    fun getName(status: Int): String {
+    private fun getName(status: Int): String {
         return when {
             status >= 0xF0 -> {
                 val index = status and 0x0F
@@ -34,6 +29,7 @@ class MidiMessageHandlerImpl(private val dataStore: DataStorer): MidiMessageHand
         }
     }
 
+    @ExperimentalUnsignedTypes
     private fun translateMidiMessage(data: ByteArray, inputOffset: Int): String {
         var offset = inputOffset
         val sb = StringBuilder()
@@ -41,7 +37,7 @@ class MidiMessageHandlerImpl(private val dataStore: DataStorer): MidiMessageHand
         val status: Int = MidiMessageTranslator.transformByteToInt(statusByte).and(0xFF)
         sb.append(getName(status)).append("(")
         val numData = MidiConstants.getBytesPerMessage(statusByte.toInt()) - 1
-        if (status >= 0x80 && status < 0xF0) {
+        if (status in 0x80..0xef) {
             val channel = status and 0x0F
             sb.append(channel).append(", ")
         }

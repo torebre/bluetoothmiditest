@@ -4,14 +4,12 @@ import android.content.Context
 import android.os.Environment
 import android.util.Log
 import java.io.BufferedWriter
-import java.io.Closeable
 import java.io.File
 import java.nio.file.Files
 
-class DataStorer(val context: Context) : Closeable {
-
+class DataFileStore(val context: Context) : DataStore {
     private val outputWriter: BufferedWriter?
-//    private var storeMode = false
+    private val stringBuilder: StringBuilder = StringBuilder()
 
     init {
         outputWriter = setupOutputFile()?.let {
@@ -39,23 +37,20 @@ class DataStorer(val context: Context) : Closeable {
     }
 
 
-//    fun store(store: Boolean) {
-//        storeMode = store
-//    }
-
-//    fun isStoring(): Boolean {
-//        return storeMode && outputWriter != null
-//    }
-
-
-    fun store(message: String, timestamp: Long) {
+    override fun store(message: String, timestamp: Long) {
         outputWriter?.run {
-            write("$timestamp: $message\n")
+            "$timestamp: $message\n".let {
+                write(it)
+                stringBuilder.append(it).append("\n")
+            }
 
             // TODO Not necessary to flush data all the time
             flush()
         }
     }
+
+    override fun getData() = stringBuilder.toString()
+
 
     override fun close() {
         outputWriter?.close()
