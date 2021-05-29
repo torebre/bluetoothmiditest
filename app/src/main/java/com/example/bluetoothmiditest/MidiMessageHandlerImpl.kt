@@ -1,38 +1,17 @@
 package com.example.bluetoothmiditest
 
-import android.util.Log
-import java.io.BufferedWriter
 import java.io.Closeable
-import java.io.File
-import java.nio.file.Files
 
 
-class MidiMessageHandlerImpl(outputFile: File?): MidiMessageHandler, Closeable {
-
-    private val outputWriter: BufferedWriter?
+class MidiMessageHandlerImpl(private val dataStore: DataStorer): MidiMessageHandler, Closeable {
     private var storeMode = false
 
-    init {
-        outputWriter = outputFile?.let {
-            Files.newBufferedWriter(it.toPath())
-        }
-    }
 
-    override fun store(store: Boolean) {
-        storeMode = store
-    }
-
-    override fun isStoring(): Boolean {
-        return storeMode && outputWriter != null
-    }
 
 
     override fun send(msg: ByteArray, offset: Int, count: Int, timestamp: Long) {
         if(storeMode) {
-            outputWriter?.let {
-                val message = translateMidiMessage(msg, offset)
-                it.write("$timestamp: $message\n")
-            }
+            dataStore.store(translateMidiMessage(msg, offset), timestamp)
         }
 
 //        Log.i("MessageHandler", "Got message ${msg}")
@@ -76,6 +55,11 @@ class MidiMessageHandlerImpl(outputFile: File?): MidiMessageHandler, Closeable {
         return sb.toString()
     }
 
+    override fun store(store: Boolean) {
+        this.storeMode = store
+    }
+
+    override fun isStoring() = storeMode
 
 
     companion object {
@@ -111,7 +95,7 @@ class MidiMessageHandlerImpl(outputFile: File?): MidiMessageHandler, Closeable {
     }
 
     override fun close() {
-        outputWriter.run { close() }
+        dataStore.close()
     }
 
 }

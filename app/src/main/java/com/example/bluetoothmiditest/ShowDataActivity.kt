@@ -7,7 +7,6 @@ import android.media.midi.MidiDevice
 import android.media.midi.MidiManager
 import android.media.midi.MidiReceiver
 import android.os.Bundle
-import android.os.Environment
 import android.os.Handler
 import android.util.Log
 import android.widget.TextView
@@ -25,18 +24,8 @@ class ShowDataActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val outputFile = getExternalFilesDir(null)?.let {
-            if(Environment.getExternalStorageState(it) == Environment.MEDIA_MOUNTED) {
-                getExternalFilesDir(null)?.resolve( "midi_output.txt")
-            }
-            else {
-                null
-            }
-        }
-
-        Log.i("ShowData", "Output file: $outputFile")
-
-        midiMessageHandler = MidiMessageHandlerImpl(outputFile)
+        val dataStorer = DataStorer(applicationContext)
+        midiMessageHandler = MidiMessageHandlerImpl(dataStorer)
         midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
         midiMessageHandler.store(true)
 
