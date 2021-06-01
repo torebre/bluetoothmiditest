@@ -14,15 +14,23 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.bluetoothmiditest.storage.Session
+import com.google.gson.Gson
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
 
 
 class ShowDataActivity : AppCompatActivity() {
 
-    private lateinit var midiMessageHandler: MidiMessageHandler // by inject()
+    companion object {
+        const val DATA_STORE_STATE = "DataStoreState"
+        const val BLUETOOTH_DEVICE = "BluetoothDevice"
+    }
+
+    private lateinit var midiMessageHandler: MidiMessageHandler
     private lateinit var midiMessageTranslator: MidiMessageTranslator
-    private val dataStorer = DataMemoryStore()
+    private lateinit var dataStore: DataMemoryStore
+    private var bluetoothDevice: BluetoothDevice? = null
 
     private val getFileUrl =
         registerForActivityResult(ActivityResultContracts.StartActivityForResult()) { activityResult ->
@@ -35,30 +43,43 @@ class ShowDataActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        midiMessageHandler = MidiMessageHandlerImpl(dataStorer)
+        val savedSession = savedInstanceState?.getSerializable(DATA_STORE_STATE)?.let {
+            it as Session
+        }
+
+        dataStore = DataMemoryStore(savedSession ?: Session())
+
+        midiMessageHandler = MidiMessageHandlerImpl(dataStore)
         midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
         midiMessageHandler.store(true)
 
         setContentView(R.layout.show_midi_data)
 
         val dataView = findViewById<TextView>(R.id.midiData)
-        if (intent.extras == null) {
+
+        // Get the Bluetooth device either from the saved bundle or
+        // from the input given when this intent was started from
+        // some other intent
+        bluetoothDevice = savedInstanceState?.getParcelable(BLUETOOTH_DEVICE)
+            ?: intent.extras?.let { bundle ->
+                bundle[Intent.EXTRA_TEXT]?.let {
+                    it as BluetoothDevice
+                }
+            }
+
+        if (bluetoothDevice == null) {
+            // Not expected
             Log.e("ShowData", "No address given")
             return
         }
 
-        intent.extras?.let { bundle ->
-            bundle[Intent.EXTRA_TEXT]?.let {
-                val bluetoothDevice = it as BluetoothDevice
-                val midiManager =
-                    applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
-                openBluetoothMidiDevice(bluetoothDevice, dataView, midiManager)
-            }
+        bluetoothDevice?.let {
+            setupBluetoothConnection(it, dataView)
         }
 
         val button = findViewById<Button>(R.id.btnSave)
         button.setOnClickListener {
-            dataStorer.getData().takeIf { it.isNotBlank() }?.let {
+            dataStore.getData().takeIf { it.midiMessages.isNotEmpty() }?.let {
                 val createDocumentIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                     addCategory(Intent.CATEGORY_OPENABLE)
                     type = "application/text"
@@ -67,6 +88,24 @@ class ShowDataActivity : AppCompatActivity() {
                 getFileUrl.launch(createDocumentIntent)
             }
         }
+    }
+
+    private fun setupBluetoothConnection(bluetoothDevice: BluetoothDevice, dataView: TextView) {
+        val midiManager =
+            applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
+        openBluetoothMidiDevice(bluetoothDevice, dataView, midiManager)
+
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        outState.run {
+            putSerializable(DATA_STORE_STATE, dataStore.getData())
+
+            bluetoothDevice?.let {
+                putParcelable(BLUETOOTH_DEVICE, it)
+            }
+        }
+        super.onSaveInstanceState(outState)
 
     }
 
@@ -137,11 +176,11 @@ class ShowDataActivity : AppCompatActivity() {
 
 
     private fun saveData(uri: Uri) {
-        dataStorer.getData().takeIf { it.isNotBlank() }?.let { midiTextData ->
+        dataStore.getData().takeIf { it.midiMessages.isNotEmpty() }?.let { midiTextData ->
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 BufferedOutputStream(outputStream).let { bufferedOutputStream ->
                     bufferedOutputStream.writer(StandardCharsets.UTF_8).use {
-                        it.write(midiTextData)
+                        Gson().toJson(midiTextData)
                     }
                 }
             }

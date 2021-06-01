@@ -1,18 +1,19 @@
 package com.example.bluetoothmiditest
 
-
-class DataMemoryStore : DataStore {
-
-    private val stringBuilder: StringBuilder = StringBuilder()
+import com.example.bluetoothmiditest.storage.MidiMessage
+import com.example.bluetoothmiditest.storage.Session
 
 
-    override fun store(message: String, timestamp: Long) {
-        "$timestamp: $message\n".let {
-            stringBuilder.append(it).append("\n")
-        }
+class DataMemoryStore(session: Session?) : DataStore {
+
+    private val session: Session = session ?: Session()
+
+    override fun store(midiMessage: MidiMessage) {
+        session.midiMessages.add(midiMessage)
     }
 
-    override fun getData() = stringBuilder.toString()
+
+    override fun getData() = session
 
 
     override fun close() {

@@ -7,7 +7,11 @@ import java.io.BufferedWriter
 import java.io.File
 import java.nio.file.Files
 
-class DataFileStore(val context: Context) : DataStore {
+
+/**
+ * @deprecated
+ */
+class DataFileStore(val context: Context) {
     private val outputWriter: BufferedWriter?
     private val stringBuilder: StringBuilder = StringBuilder()
 
@@ -37,7 +41,7 @@ class DataFileStore(val context: Context) : DataStore {
     }
 
 
-    override fun store(message: String, timestamp: Long) {
+    fun store(message: String, timestamp: Long) {
         outputWriter?.run {
             "$timestamp: $message\n".let {
                 write(it)
@@ -49,10 +53,10 @@ class DataFileStore(val context: Context) : DataStore {
         }
     }
 
-    override fun getData() = stringBuilder.toString()
+     fun getData() = stringBuilder.toString()
 
 
-    override fun close() {
+     fun close() {
         outputWriter?.close()
     }
 
