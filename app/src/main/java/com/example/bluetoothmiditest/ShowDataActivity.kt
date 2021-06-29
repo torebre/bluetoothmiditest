@@ -43,15 +43,12 @@ class ShowDataActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val savedSession = savedInstanceState?.getSerializable(DATA_STORE_STATE)?.let {
-            it as Session
-        }
+        val savedSession = savedInstanceState?.getSerializable(DATA_STORE_STATE) as Session?
 
-        dataStore = DataMemoryStore(savedSession ?: Session())
+        dataStore = DataMemoryStore(savedSession)
 
-        midiMessageHandler = MidiMessageHandlerImpl(dataStore)
+        midiMessageHandler = MidiMessageHandlerImpl(dataStore).also { it.store(true) }
         midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
-        midiMessageHandler.store(true)
 
         setContentView(R.layout.show_midi_data)
 
@@ -77,15 +74,16 @@ class ShowDataActivity : AppCompatActivity() {
             setupBluetoothConnection(it, dataView)
         }
 
-        val button = findViewById<Button>(R.id.btnSave)
-        button.setOnClickListener {
-            dataStore.getData().takeIf { it.midiMessages.isNotEmpty() }?.let {
-                val createDocumentIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
-                    addCategory(Intent.CATEGORY_OPENABLE)
-                    type = "application/text"
-                    putExtra(Intent.EXTRA_TITLE, "midi_output.txt")
+        findViewById<Button>(R.id.btnSave).apply {
+            setOnClickListener {
+                dataStore.getData().takeIf { it.midiMessages.isNotEmpty() }?.let {
+                    val createDocumentIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
+                        addCategory(Intent.CATEGORY_OPENABLE)
+                        type = "application/text"
+                        putExtra(Intent.EXTRA_TITLE, "midi_output.txt")
+                    }
+                    getFileUrl.launch(createDocumentIntent)
                 }
-                getFileUrl.launch(createDocumentIntent)
             }
         }
     }
@@ -157,7 +155,13 @@ class ShowDataActivity : AppCompatActivity() {
                             count: Int,
                             timestamp: Long
                         ) {
+
+                            Log.i("Midi", "Message: $msg")
+
                             msg?.let {
+
+                                Log.i("Midi", "Bytes in message: ${it.map { it.toString() }.joinToString()}")
+
                                 midiMessageTranslator.onSend(msg, offset, count, timestamp)
                             }
 

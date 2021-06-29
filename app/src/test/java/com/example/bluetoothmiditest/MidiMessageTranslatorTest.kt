@@ -4,10 +4,11 @@ import android.media.midi.MidiReceiver
 import org.junit.Assert
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.Matchers
+import org.mockito.ArgumentMatchers
 import org.mockito.Mock
+import org.mockito.Mockito
 import org.mockito.Mockito.*
-import org.mockito.runners.MockitoJUnitRunner
+import org.mockito.junit.MockitoJUnitRunner
 import java.io.IOException
 import java.util.*
 
@@ -21,20 +22,21 @@ import java.util.*
 class MidiMessageTranslatorTest {
 
     @Mock
-    private lateinit var midiReceiver: MidiReceiver
+    private lateinit var midiReceiver: MidiMessageHandler
 
+    private fun <T> any(type: Class<T>): T = Mockito.any<T>(type)
 
     @Test
     fun testNoteOn() {
         val receivedMessages = mutableListOf<ByteArray>()
         doAnswer { invocation ->
-            val msg = invocation.getArgumentAt(0, ByteArray::class.java)
+            val msg = invocation.getArgument(0, ByteArray::class.java)
             receivedMessages.add(msg)
         }.`when`(midiReceiver).send(
-            Matchers.any(),
-            Matchers.anyInt(),
-            Matchers.anyInt(),
-            Matchers.anyLong()
+            any(ByteArray::class.java),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyLong()
         )
 
         val messageTranslator = MidiMessageTranslator(midiReceiver)
@@ -53,7 +55,7 @@ class MidiMessageTranslatorTest {
 
     // Store a complete MIDI message.
     internal class MidiMessage(
-        buffer: ByteArray?,
+        buffer: ByteArray,
         offset: Int,
         length: Int,
         timestamp: Long
@@ -112,17 +114,17 @@ class MidiMessageTranslatorTest {
         doAnswer { invocation ->
             receivedMessages.add(
                 MidiMessage(
-                    invocation.getArgumentAt(0, ByteArray::class.java),
-                    invocation.getArgumentAt(1, Int::class.java),
-                    invocation.getArgumentAt(2, Int::class.java),
-                    invocation.getArgumentAt(3, Long::class.java)
+                    invocation.getArgument(0, ByteArray::class.java),
+                    invocation.getArgument(1, Int::class.javaObjectType),
+                    invocation.getArgument(2, Int::class.javaObjectType),
+                    invocation.getArgument(3, Long::class.javaObjectType)
                 )
             )
         }.`when`(midiReceiver).send(
-            Matchers.any(),
-            Matchers.anyInt(),
-            Matchers.anyInt(),
-            Matchers.anyLong()
+            any(ByteArray::class.java),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyInt(),
+            ArgumentMatchers.anyLong()
         )
 
         val framer = MidiMessageTranslator(midiReceiver)

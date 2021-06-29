@@ -1,6 +1,7 @@
 package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
+import android.util.Log
 
 
 /**
@@ -132,12 +133,15 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
             ++tempOffset
         }
 
-        if (sysExStartOffset >= 0 && sysExStartOffset < tempOffset) {
+//        Log.i("Midi", "Framed message: $msg")
+
+        if (sysExStartOffset in 0 until tempOffset) {
+
+//            Log.i("Midi", "$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
+
             receiver.send(msg, sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
         }
     }
-
-
 
 
 }

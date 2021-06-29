@@ -1,5 +1,6 @@
 package com.example.bluetoothmiditest
 
+import android.util.Log
 import com.example.bluetoothmiditest.storage.MidiMessage
 import java.io.Closeable
 
@@ -11,6 +12,9 @@ class MidiMessageHandlerImpl(private val dataStore: DataStore) : MidiMessageHand
     @ExperimentalUnsignedTypes
     override fun send(msg: ByteArray, offset: Int, count: Int, timestamp: Long) {
         if (storeMode) {
+
+            Log.i("Midi", "Translated MIDI message: ${translateMidiMessage(msg, offset, timestamp)}")
+
             dataStore.store(translateMidiMessage(msg, offset, timestamp))
         }
     }
@@ -58,6 +62,10 @@ class MidiMessageHandlerImpl(private val dataStore: DataStore) : MidiMessageHand
         var offset = inputOffset
         val statusByte = data[offset++]
         val status: Int = MidiMessageTranslator.transformByteToInt(statusByte).and(0xFF)
+
+        Log.i("Midi", "Status byte: $statusByte. Status: $status")
+
+
         val statusAsString = getName(status)
         val numData = MidiConstants.getBytesPerMessage(statusByte.toInt()) - 1
         val channel = if (status in 0x80..0xef) {
