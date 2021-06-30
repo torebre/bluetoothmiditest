@@ -133,11 +133,11 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
             ++tempOffset
         }
 
-//        Log.i("Midi", "Framed message: $msg")
+        Log.i("Midi", "Framed message: $msg")
 
         if (sysExStartOffset in 0 until tempOffset) {
 
-//            Log.i("Midi", "$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
+            Log.i("Midi", "$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
 
             receiver.send(msg, sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
         }

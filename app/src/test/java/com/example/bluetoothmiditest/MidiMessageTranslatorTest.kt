@@ -2,13 +2,13 @@ package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
 import org.junit.Assert
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.mockito.ArgumentMatchers
-import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.*
-import org.mockito.junit.MockitoJUnitRunner
+import org.robolectric.RobolectricTestRunner
 import java.io.IOException
 import java.util.*
 
@@ -16,15 +16,23 @@ import java.util.*
 /**
  * These are the tests from TestMidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
  */
+//@RunWith(
+//    MockitoJUnitRunner::class
+//)
 @RunWith(
-    MockitoJUnitRunner::class
+    RobolectricTestRunner::class
 )
 class MidiMessageTranslatorTest {
 
-    @Mock
     private lateinit var midiReceiver: MidiMessageHandler
 
+    // This is needed to avoid some problems that appeared when trying to use ArgumentMatchers.any()
     private fun <T> any(type: Class<T>): T = Mockito.any<T>(type)
+
+    @Before
+    fun setup() {
+        midiReceiver = mock(MidiMessageHandler::class.java)
+    }
 
     @Test
     fun testNoteOn() {
