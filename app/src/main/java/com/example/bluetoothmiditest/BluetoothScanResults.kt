@@ -2,12 +2,12 @@ package com.example.bluetoothmiditest
 
 import android.bluetooth.BluetoothClass
 import android.bluetooth.le.ScanResult
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
+import timber.log.Timber
 
 class BluetoothScanResults(private val connectHandler: ConnectHandler
 ) :
@@ -28,7 +28,7 @@ class BluetoothScanResults(private val connectHandler: ConnectHandler
 
         override fun onClick(view: View) {
 
-            Log.i("Bluetooth", "Device entry clicked")
+            Timber.i("Device entry clicked")
 
             connectHandler.deviceEntryClicked(deviceList[adapterPosition])
         }

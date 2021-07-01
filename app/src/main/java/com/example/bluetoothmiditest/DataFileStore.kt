@@ -2,7 +2,7 @@ package com.example.bluetoothmiditest
 
 import android.content.Context
 import android.os.Environment
-import android.util.Log
+import timber.log.Timber
 import java.io.BufferedWriter
 import java.io.File
 import java.nio.file.Files
@@ -18,7 +18,7 @@ class DataFileStore(val context: Context) {
     init {
         outputWriter = setupOutputFile()?.let {
 
-            Log.i("ShowData", "Output file: $it")
+            Timber.i("Output file: $it")
 
             Files.newBufferedWriter(it.toPath())
         }
@@ -29,7 +29,7 @@ class DataFileStore(val context: Context) {
         return context.getExternalFilesDir(null)?.let { externalFilesDir ->
             Environment.getExternalStorageState(externalFilesDir).let { storageState ->
 
-                Log.i("ShowData", "Storage state is $storageState")
+                Timber.i("Storage state is $storageState")
 
                 if (storageState == Environment.MEDIA_MOUNTED) {
                     externalFilesDir.resolve("midi_output.txt")

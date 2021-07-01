@@ -4,7 +4,7 @@ import com.example.bluetoothmiditest.storage.MidiMessage
 import com.example.bluetoothmiditest.storage.Session
 
 
-class DataMemoryStore(session: Session?) : DataStore {
+class DataMemoryStore(session: Session? = null) : DataStore {
 
     private val session: Session = session ?: Session()
 

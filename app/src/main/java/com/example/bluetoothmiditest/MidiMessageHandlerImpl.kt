@@ -1,19 +1,17 @@
 package com.example.bluetoothmiditest
 
-import android.util.Log
 import com.example.bluetoothmiditest.storage.MidiMessage
+import timber.log.Timber
 import java.io.Closeable
 
 
-class MidiMessageHandlerImpl(private val dataStore: DataStore) : MidiMessageHandler, Closeable {
-    private var storeMode = false
-
+class MidiMessageHandlerImpl(private val dataStore: DataStore, private var storeMode: Boolean = false) : MidiMessageHandler, Closeable {
 
     @ExperimentalUnsignedTypes
     override fun send(msg: ByteArray, offset: Int, count: Int, timestamp: Long) {
         if (storeMode) {
 
-            Log.i("Midi", "Translated MIDI message: ${translateMidiMessage(msg, offset, timestamp)}")
+            Timber.i("Translated MIDI message: ${translateMidiMessage(msg, offset, timestamp)}")
 
             dataStore.store(translateMidiMessage(msg, offset, timestamp))
         }
@@ -63,7 +61,7 @@ class MidiMessageHandlerImpl(private val dataStore: DataStore) : MidiMessageHand
         val statusByte = data[offset++]
         val status: Int = MidiMessageTranslator.transformByteToInt(statusByte).and(0xFF)
 
-        Log.i("Midi", "Status byte: $statusByte. Status: $status")
+        Timber.i("Status byte: $statusByte. Status: $status")
 
 
         val statusAsString = getName(status)

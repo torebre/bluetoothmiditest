@@ -2,6 +2,7 @@ package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
 import android.util.Log
+import timber.log.Timber
 
 
 /**
@@ -17,35 +18,6 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
 
 
     companion object {
-
-        enum class ChannelCommandName {
-            NOTE_OFF,
-            NOTE_ON,
-            POLY_TOUCH,
-            CONTROL,
-            PROGRAM,
-            PRESSURE,
-            BEND
-        }
-
-        enum class SystemCommandName {
-            SYS_EX,
-            TIME_CODE,
-            SONG_POS,
-            SONG_SEL,
-            F4,
-            F5,
-            TUNE_REQ,
-            END_SYS_EX,
-            TIMING_CLOCK,
-            F9,
-            START,
-            CONTINUE,
-            STOP,
-            FD,
-            ACTIVE_SENSING,
-            RESET
-        }
 
         @ExperimentalUnsignedTypes
         fun transformByteToInt(inputByte: Byte) =
@@ -133,15 +105,14 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
             ++tempOffset
         }
 
-        Log.i("Midi", "Framed message: $msg")
+        Timber.i("Framed message: $msg")
 
         if (sysExStartOffset in 0 until tempOffset) {
 
-            Log.i("Midi", "$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
+            Timber.i("$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
 
             receiver.send(msg, sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
         }
     }
-
 
 }

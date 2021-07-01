@@ -1,24 +1,25 @@
 package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
-import org.junit.Assert
+import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
-import org.mockito.ArgumentMatchers
 import org.mockito.Mockito
 import org.mockito.Mockito.*
 import org.robolectric.RobolectricTestRunner
+import timber.log.Timber
 import java.io.IOException
 import java.util.*
 
 
 /**
  * These are the tests from TestMidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
+ *
+ * Using the RoboelectricTestRunner because there where some places the Android API was used in the code
+ * being tested here and it caused exceptions when the default test runner that does not mock the
+ * Android API was used.
  */
-//@RunWith(
-//    MockitoJUnitRunner::class
-//)
 @RunWith(
     RobolectricTestRunner::class
 )
@@ -31,6 +32,7 @@ class MidiMessageTranslatorTest {
 
     @Before
     fun setup() {
+        Timber.plant(TimberSystemOutTree())
         midiReceiver = mock(MidiMessageHandler::class.java)
     }
 
@@ -42,9 +44,9 @@ class MidiMessageTranslatorTest {
             receivedMessages.add(msg)
         }.`when`(midiReceiver).send(
             any(ByteArray::class.java),
-            ArgumentMatchers.anyInt(),
-            ArgumentMatchers.anyInt(),
-            ArgumentMatchers.anyLong()
+            anyInt(),
+            anyInt(),
+            anyLong()
         )
 
         val messageTranslator = MidiMessageTranslator(midiReceiver)
@@ -81,14 +83,14 @@ class MidiMessageTranslatorTest {
 
         // Check whether these two messages are the same.
         fun check(other: MidiMessage) {
-            Assert.assertEquals(
+            assertEquals(
                 "data.length",
                 data.size.toLong(),
                 other.data.size.toLong()
             )
-            Assert.assertEquals("data.timestamp", timestamp, other.timestamp)
+            assertEquals("data.timestamp", timestamp, other.timestamp)
             for (i in data.indices) {
-                Assert.assertEquals("data[$i]", data[i], other.data[i])
+                assertEquals("data[$i]", data[i], other.data[i])
             }
         }
 
@@ -116,8 +118,6 @@ class MidiMessageTranslatorTest {
         original: Array<MidiMessage>,
         expected: Array<MidiMessage>
     ) {
-
-
         val receivedMessages = mutableListOf<MidiMessage>()
         doAnswer { invocation ->
             receivedMessages.add(
@@ -130,9 +130,9 @@ class MidiMessageTranslatorTest {
             )
         }.`when`(midiReceiver).send(
             any(ByteArray::class.java),
-            ArgumentMatchers.anyInt(),
-            ArgumentMatchers.anyInt(),
-            ArgumentMatchers.anyLong()
+            anyInt(),
+            anyInt(),
+            anyLong()
         )
 
         val framer = MidiMessageTranslator(midiReceiver)
@@ -142,7 +142,7 @@ class MidiMessageTranslatorTest {
                 message.timestamp
             )
         }
-        Assert.assertEquals(
+        assertEquals(
             "command count", expected.size,
             receivedMessages.size
         )

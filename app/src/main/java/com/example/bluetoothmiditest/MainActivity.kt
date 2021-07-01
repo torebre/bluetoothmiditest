@@ -9,9 +9,7 @@ import android.bluetooth.le.ScanSettings
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Bundle
-import android.os.Environment
 import android.os.ParcelUuid
-import android.util.Log
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -21,7 +19,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import java.nio.file.Paths
+import timber.log.Timber
 import java.util.*
 
 
@@ -58,7 +56,7 @@ class MainActivity : AppCompatActivity() {
             Manifest.permission.ACCESS_FINE_LOCATION
         )
 
-        Log.i("Main", "Has ACCESS_FINE_LOCATION permission: $permissionCheck")
+        Timber.i("Has ACCESS_FINE_LOCATION permission: $permissionCheck")
         if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
             // ask permissions here using below code
             ActivityCompat.requestPermissions(
@@ -121,13 +119,13 @@ class MainActivity : AppCompatActivity() {
         scanButton.setOnClickListener {
             if (isScanning) {
 
-                Log.i("Scanner", "Stopping scanning")
+                Timber.i("Stopping scanning")
 
                 stopScanning()
                 scanButton.setText(R.string.scan)
             } else {
 
-                Log.i("Scanner", "Starting scanning")
+                Timber.i("Starting scanning")
 
                 BluetoothAdapter.getDefaultAdapter()?.let { scanLeDevices(it) }
                 scanButton.setText(R.string.stop)
@@ -143,7 +141,7 @@ class MainActivity : AppCompatActivity() {
         val leScanner = bluetoothAdapter.bluetoothLeScanner
         isScanning = true
 
-        Log.i("Scanner", "Start scan")
+        Timber.i("Start scan")
 
         leScanner.startScan(
             listOf(scanFilter),
@@ -167,7 +165,7 @@ class MainActivity : AppCompatActivity() {
             callbackType: Int,
             result: ScanResult?
         ) {
-            Log.i("Scanner", "Scan result. Callback type: ${callbackType}. Result: $result")
+            Timber.i("Scan result. Callback type: ${callbackType}. Result: $result")
             result?.apply {
                 this@MainActivity.runOnUiThread {
                     BluetoothDeviceData(device).let {
@@ -182,7 +180,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onBatchScanResults(results: List<ScanResult?>?) {
-            Log.i("Scanner", "Scan results. Results: $results")
+            Timber.i("Scan results. Results: $results")
 
             results?.apply {
                 filterNotNull().forEach {
@@ -198,7 +196,7 @@ class MainActivity : AppCompatActivity() {
         }
 
         override fun onScanFailed(errorCode: Int) {
-            Log.e("Scanner", "Scan failed. Error code: $errorCode")
+            Timber.e("Scan failed. Error code: $errorCode")
         }
     }
 

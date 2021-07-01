@@ -9,13 +9,13 @@ import android.media.midi.MidiReceiver
 import android.net.Uri
 import android.os.Bundle
 import android.os.Handler
-import android.util.Log
 import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bluetoothmiditest.storage.Session
 import com.google.gson.Gson
+import timber.log.Timber
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
 
@@ -66,7 +66,7 @@ class ShowDataActivity : AppCompatActivity() {
 
         if (bluetoothDevice == null) {
             // Not expected
-            Log.e("ShowData", "No address given")
+            Timber.e("No address given")
             return
         }
 
@@ -122,7 +122,7 @@ class ShowDataActivity : AppCompatActivity() {
     ) {
         midiManager.openBluetoothDevice(bluetoothDevice,
             { device ->
-                Log.i("Bluetooth", "Device opened: $device")
+                Timber.i("Device opened: $device")
 
                 openedMidiDevice = device
 
@@ -146,7 +146,7 @@ class ShowDataActivity : AppCompatActivity() {
                 } else {
                     runOnUiThread { dataView.append("Opened port\n") }
 
-                    Log.i("Midi", "Opened output port: $outputPort")
+                    Timber.i("Opened output port: $outputPort")
 
                     outputPort.connect(object : MidiReceiver() {
                         override fun onSend(
@@ -156,11 +156,11 @@ class ShowDataActivity : AppCompatActivity() {
                             timestamp: Long
                         ) {
 
-                            Log.i("Midi", "Message: $msg")
+                            Timber.i("Message: $msg")
 
                             msg?.let {
 
-                                Log.i("Midi", "Bytes in message: ${it.map { it.toString() }.joinToString()}")
+                                Timber.i("Offset: $offset. Count: $count. Timestamp: $timestamp. Bytes in message: ${it.joinToString { it.toString() }}")
 
                                 midiMessageTranslator.onSend(msg, offset, count, timestamp)
                             }
@@ -172,7 +172,7 @@ class ShowDataActivity : AppCompatActivity() {
                     })
                 }
             }, Handler { msg ->
-                Log.i("Bluetooth", "Message: $msg")
+                Timber.i("Message: $msg")
                 true
             }
         )
