@@ -1,20 +1,19 @@
 package com.example.bluetoothmiditest
 
 import android.media.midi.MidiReceiver
-import android.util.Log
-import timber.log.Timber
 
 
 /**
  * This is based on MidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
  */
+@ExperimentalUnsignedTypes
 class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiReceiver() {
     private var needed = 0
     private var inSysEx = false
-    private var runningStatus: Byte = 0
+    private var runningStatus: UByte = 0u
     private var currentCount = 0
 
-    private val buffer = ByteArray(3)
+    private val buffer = UByteArray(3)
 
 
     companion object {
@@ -25,6 +24,7 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
     }
 
 
+    @ExperimentalUnsignedTypes
     override fun onSend(
         msg: ByteArray,
         offset: Int,
@@ -38,30 +38,28 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
         }
         var tempOffset = offset
 
-
-
         for (i in 0 until count) {
-            val currentByte = msg[tempOffset]
-            // TODO Test that this is correct
-            val currentInt = transformByteToInt(currentByte)
+            val currentByte = msg[tempOffset].toUByte()
+            val currentInt = currentByte.toUInt()
 
-            if (currentInt > 0x80) {
-                if (currentInt < 0xF0) {
+            if (currentInt >= 0x80u) {
+               // Status byte
+                if (currentInt < 0xF0u) {
                     // Channel message
                     runningStatus = currentByte
                     currentCount = 1
-                    needed = MidiConstants.getBytesPerMessage(currentInt) - 1
-                } else if (currentInt < 0xF8) {
+                    needed = MidiConstants.getBytesPerMessage(currentInt.toInt()) - 1
+                } else if (currentInt < 0xF8u) {
                     // System common
-                    if (currentInt == 0xF0) {
+                    if (currentInt == 0xF0u) {
                         // SysEx start
                         inSysEx = true
                         sysExStartOffset = tempOffset
-                    } else if (currentInt == 0xF7) {
+                    } else if (currentInt == 0xF7u) {
                         // SysEx end
                         if (inSysEx) {
                             receiver.send(
-                                msg,
+                                msg.toUByteArray(),
                                 sysExStartOffset,
                                 tempOffset - sysExStartOffset + 1,
                                 timestamp
@@ -71,33 +69,33 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
                         }
                     } else {
                         buffer[0] = currentByte
-                        runningStatus = 0
+                        runningStatus = 0u
                         currentCount = 1
-                        needed = MidiConstants.getBytesPerMessage(currentInt) - 1
+                        needed = MidiConstants.getBytesPerMessage(currentInt.toInt()) - 1
                     }
                 } else {
                     // Real-time
                     if (inSysEx) {
                         receiver.send(
-                            msg,
+                            msg.toUByteArray(),
                             sysExStartOffset,
                             tempOffset - sysExStartOffset,
                             timestamp
                         )
                         sysExStartOffset = tempOffset + 1
                     }
-                    receiver.send(msg, tempOffset, 1, timestamp)
+                    receiver.send(msg.toUByteArray(), tempOffset, 1, timestamp)
                 }
             } else {
                 // Data byte
                 if (!inSysEx) {
                     buffer[currentCount++] = currentByte
                     if (--needed == 0) {
-                        if (runningStatus != 0.toByte()) {
+                        if (runningStatus != 0.toUByte()) {
                             buffer[0] = runningStatus
                         }
                         receiver.send(buffer, 0, currentCount, timestamp)
-                        needed = MidiConstants.getBytesPerMessage(transformByteToInt(buffer[0])) - 1
+                        needed = MidiConstants.getBytesPerMessage(buffer[0].toInt()) - 1
                         currentCount = 1
                     }
                 }
@@ -105,13 +103,8 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
             ++tempOffset
         }
 
-        Timber.i("Framed message: $msg")
-
         if (sysExStartOffset in 0 until tempOffset) {
-
-            Timber.i("$msg, $sysExStartOffset, ${tempOffset - sysExStartOffset}, $timestamp")
-
-            receiver.send(msg, sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
+            receiver.send(msg.toUByteArray(), sysExStartOffset, tempOffset - sysExStartOffset, timestamp)
         }
     }
 

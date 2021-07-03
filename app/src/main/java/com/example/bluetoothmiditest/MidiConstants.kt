@@ -22,35 +22,36 @@ package com.example.bluetoothmiditest
  * These values are defined in the MIDI Standard 1.0
  * available from the MIDI Manufacturers Association.
  */
+@ExperimentalUnsignedTypes
 object MidiConstants {
     internal const val TAG = "MidiTools"
-    const val STATUS_COMMAND_MASK = 0xF0.toByte()
-    const val STATUS_CHANNEL_MASK = 0x0F.toByte()
+    val STATUS_COMMAND_MASK: UByte = 0xF0.toUByte()
+    val STATUS_CHANNEL_MASK: UByte = 0x0F.toUByte()
 
     // Channel voice messages.
-    const val STATUS_NOTE_OFF = 0x80.toByte()
-    const val STATUS_NOTE_ON = 0x90.toByte()
-    const val STATUS_POLYPHONIC_AFTERTOUCH = 0xA0.toByte()
-    const val STATUS_CONTROL_CHANGE = 0xB0.toByte()
-    const val STATUS_PROGRAM_CHANGE = 0xC0.toByte()
-    const val STATUS_CHANNEL_PRESSURE = 0xD0.toByte()
-    const val STATUS_PITCH_BEND = 0xE0.toByte()
+    val STATUS_NOTE_OFF: UByte = 0x80.toUByte()
+    val STATUS_NOTE_ON: UByte = 0x90.toUByte()
+    val STATUS_POLYPHONIC_AFTERTOUCH: UByte = 0xA0.toUByte()
+    val STATUS_CONTROL_CHANGE: UByte = 0xB0.toUByte()
+    val STATUS_PROGRAM_CHANGE: UByte = 0xC0.toUByte()
+    val STATUS_CHANNEL_PRESSURE: UByte = 0xD0.toUByte()
+    val STATUS_PITCH_BEND: UByte = 0xE0.toUByte()
 
     // System Common Messages.
-    const val STATUS_SYSTEM_EXCLUSIVE = 0xF0.toByte()
-    const val STATUS_MIDI_TIME_CODE = 0xF1.toByte()
-    const val STATUS_SONG_POSITION = 0xF2.toByte()
-    const val STATUS_SONG_SELECT = 0xF3.toByte()
-    const val STATUS_TUNE_REQUEST = 0xF6.toByte()
-    const val STATUS_END_SYSEX = 0xF7.toByte()
+    val STATUS_SYSTEM_EXCLUSIVE: UByte = 0xF0.toUByte()
+    val STATUS_MIDI_TIME_CODE: UByte = 0xF1.toUByte()
+    val STATUS_SONG_POSITION: UByte = 0xF2.toUByte()
+    val STATUS_SONG_SELECT: UByte = 0xF3.toUByte()
+    val STATUS_TUNE_REQUEST: UByte = 0xF6.toUByte()
+    val STATUS_END_SYSEX: UByte = 0xF7.toUByte()
 
     // System Real-Time Messages
-    const val STATUS_TIMING_CLOCK = 0xF8.toByte()
-    const val STATUS_START = 0xFA.toByte()
-    const val STATUS_CONTINUE = 0xFB.toByte()
-    const val STATUS_STOP = 0xFC.toByte()
-    const val STATUS_ACTIVE_SENSING = 0xFE.toByte()
-    const val STATUS_RESET = 0xFF.toByte()
+    val STATUS_TIMING_CLOCK: UByte = 0xF8.toUByte()
+    val STATUS_START: UByte = 0xFA.toUByte()
+    val STATUS_CONTINUE: UByte = 0xFB.toUByte()
+    val STATUS_STOP: UByte = 0xFC.toUByte()
+    val STATUS_ACTIVE_SENSING: UByte = 0xFE.toUByte()
+    val STATUS_RESET: UByte = 0xFF.toUByte()
 
     /** Number of bytes in a message nc from 8c to Ec  */
     val CHANNEL_BYTE_LENGTHS = intArrayOf(3, 3, 3, 3, 2, 2, 3)
@@ -90,8 +91,9 @@ object MidiConstants {
      * @param count
      * @return true if the entire message is ActiveSensing commands
      */
+    @ExperimentalUnsignedTypes
     fun isAllActiveSensing(
-        msg: ByteArray, offset: Int,
+        msg: UByteArray, offset: Int,
         count: Int
     ): Boolean {
         // Count bytes that are not active sensing.

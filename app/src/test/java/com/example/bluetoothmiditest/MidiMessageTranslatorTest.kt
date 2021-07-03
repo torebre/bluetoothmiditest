@@ -1,116 +1,41 @@
 package com.example.bluetoothmiditest
 
-import android.media.midi.MidiReceiver
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test
-import org.junit.runner.RunWith
-import org.mockito.Mockito
-import org.mockito.Mockito.*
-import org.robolectric.RobolectricTestRunner
 import timber.log.Timber
 import java.io.IOException
-import java.util.*
 
 
 /**
  * These are the tests from TestMidiFramer in the MidiBtlePairing project in android-midisuite, licensed other under the Apache License, Version 2.0
  *
- * Using the RoboelectricTestRunner because there where some places the Android API was used in the code
- * being tested here and it caused exceptions when the default test runner that does not mock the
- * Android API was used.
  */
-@RunWith(
-    RobolectricTestRunner::class
-)
+@ExperimentalUnsignedTypes
 class MidiMessageTranslatorTest {
 
-    private lateinit var midiReceiver: MidiMessageHandler
+    private lateinit var midiReceiver: DummyMidiReceiver
 
-    // This is needed to avoid some problems that appeared when trying to use ArgumentMatchers.any()
-    private fun <T> any(type: Class<T>): T = Mockito.any<T>(type)
 
     @Before
     fun setup() {
         Timber.plant(TimberSystemOutTree())
-        midiReceiver = mock(MidiMessageHandler::class.java)
+        midiReceiver = DummyMidiReceiver()
     }
 
     @Test
     fun testNoteOn() {
-        val receivedMessages = mutableListOf<ByteArray>()
-        doAnswer { invocation ->
-            val msg = invocation.getArgument(0, ByteArray::class.java)
-            receivedMessages.add(msg)
-        }.`when`(midiReceiver).send(
-            any(ByteArray::class.java),
-            anyInt(),
-            anyInt(),
-            anyLong()
-        )
-
         val messageTranslator = MidiMessageTranslator(midiReceiver)
-        val data = byteArrayOf(0x90.toByte(), 0x45, 0x32)
+        val data = ubyteArrayOf(0x90u, 0x45u, 0x32u)
+        messageTranslator.onSend(data.toByteArray(), 0, data.size, 0)
 
-        messageTranslator.onSend(data, 0, data.size, 0)
-
-        verify(midiReceiver).send(
-            any(ByteArray::class.java),
-            eq(0),
-            eq(3),
-            eq(0L)
-        )
-
-    }
-
-    // Store a complete MIDI message.
-    internal class MidiMessage(
-        buffer: ByteArray,
-        offset: Int,
-        length: Int,
-        timestamp: Long
-    ) {
-        val data: ByteArray
-        val timestamp: Long
-        val timeReceived: Long
-
-        constructor(buffer: ByteArray, timestamp: Long) : this(
-            buffer,
-            0,
-            buffer.size,
-            timestamp
-        )
-
-        // Check whether these two messages are the same.
-        fun check(other: MidiMessage) {
-            assertEquals(
-                "data.length",
-                data.size.toLong(),
-                other.data.size.toLong()
-            )
-            assertEquals("data.timestamp", timestamp, other.timestamp)
-            for (i in data.indices) {
-                assertEquals("data[$i]", data[i], other.data[i])
-            }
+        assertEquals(1, midiReceiver.receivedMessages.size)
+        midiReceiver.receivedMessages[0].let {
+            assertEquals(0, it.offset)
+            assertEquals(3, it.length)
+            assertEquals(0L, it.timestamp)
         }
 
-        init {
-            timeReceived = System.nanoTime()
-            data = ByteArray(length)
-            System.arraycopy(buffer, offset, data, 0, length)
-            this.timestamp = timestamp
-        }
-    }
-
-    // Store received messages in an array.
-    internal class MyLoggingReceiver : MidiReceiver() {
-        var messages = ArrayList<MidiMessage>()
-        override fun onSend(
-            data: ByteArray, offset: Int, count: Int,
-            timestamp: Long
-        ) {
-            messages.add(MidiMessage(data, offset, count, timestamp))
-        }
     }
 
     @Throws(IOException::class)
@@ -118,46 +43,31 @@ class MidiMessageTranslatorTest {
         original: Array<MidiMessage>,
         expected: Array<MidiMessage>
     ) {
-        val receivedMessages = mutableListOf<MidiMessage>()
-        doAnswer { invocation ->
-            receivedMessages.add(
-                MidiMessage(
-                    invocation.getArgument(0, ByteArray::class.java),
-                    invocation.getArgument(1, Int::class.javaObjectType),
-                    invocation.getArgument(2, Int::class.javaObjectType),
-                    invocation.getArgument(3, Long::class.javaObjectType)
-                )
-            )
-        }.`when`(midiReceiver).send(
-            any(ByteArray::class.java),
-            anyInt(),
-            anyInt(),
-            anyLong()
-        )
-
         val framer = MidiMessageTranslator(midiReceiver)
         for (message in original) {
             framer.onSend(
-                message.data, 0, message.data.size,
+                message.data.toByteArray(), 0, message.data.size,
                 message.timestamp
             )
         }
         assertEquals(
             "command count", expected.size,
-            receivedMessages.size
+            midiReceiver.receivedMessages.size
         )
         for (i in expected.indices) {
-            expected[i].check(receivedMessages[i])
+            expected[i].check(midiReceiver.receivedMessages[i])
         }
     }
 
     @Throws(IOException::class)
     private fun checkSequence(
-        original: Array<ByteArray>, expected: Array<ByteArray>,
+        original: Array<UByteArray>, expected: Array<UByteArray>,
         timestamp: Long
     ) {
-        val originalMessages = original.map { MidiMessage(it, timestamp) }.toTypedArray()
-        val expectedMessages = expected.map { MidiMessage(it, timestamp) }.toTypedArray()
+        val originalMessages =
+            original.map { MidiMessage(it, length = it.size, timestamp = timestamp) }.toTypedArray()
+        val expectedMessages =
+            expected.map { MidiMessage(it, length = it.size, timestamp = timestamp) }.toTypedArray()
         checkSequence(originalMessages, expectedMessages)
     }
 
@@ -165,17 +75,17 @@ class MidiMessageTranslatorTest {
     @Throws(IOException::class)
     fun testSimpleSequence() {
         val timestamp = 8263518L
-        val data = byteArrayOf(0x90.toByte(), 0x45, 0x32)
+        val data = ubyteArrayOf(0x90u, 0x45u, 0x32u)
         val original: Array<MidiMessage> =
             arrayOf(
                 MidiMessage(
                     data,
-                    timestamp
+                    length = data.size,
+                    timestamp = timestamp
                 )
             )
         checkSequence(original, original)
     }
-
 
     // NoteOn then NoteOff using running status
     @Test
@@ -183,10 +93,10 @@ class MidiMessageTranslatorTest {
     fun testRunningArrays() {
         val timestamp = 837518L
         val original =
-            arrayOf(byteArrayOf(0x90.toByte(), 0x45, 0x32, 0x45, 0x00))
+            arrayOf(ubyteArrayOf(0x90u, 0x45u, 0x32u, 0x45u, 0x00u))
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x45, 0x00)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x45u, 0x00u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -197,19 +107,22 @@ class MidiMessageTranslatorTest {
     fun testStartMiddle() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(
-                0x23,
-                0x34,
-                0x90.toByte(),
-                0x45,
-                0x32,
-                0x45,
-                0x00
+            ubyteArrayOf(
+                0x23u,
+                0x34u,
+                0x90u,
+                0x45u,
+                0x32u,
+                0x45u,
+                0x00u
             )
         )
+
+        Timber.i("${original[0]}")
+
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x45, 0x00)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x45u, 0x00u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -219,10 +132,10 @@ class MidiMessageTranslatorTest {
     fun testTwoOn() {
         val timestamp = 837518L
         val original =
-            arrayOf(byteArrayOf(0x90.toByte(), 0x45, 0x32, 0x47, 0x63))
+            arrayOf(ubyteArrayOf(0x90u, 0x45u, 0x32u, 0x47u, 0x63u))
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x47, 0x63)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x47u, 0x63u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -232,20 +145,20 @@ class MidiMessageTranslatorTest {
     fun testThreeOn() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(
-                0x90.toByte(),
-                0x45,
-                0x32,
-                0x47,
-                0x63,
-                0x49,
-                0x23
+            ubyteArrayOf(
+                0x90u,
+                0x45u,
+                0x32u,
+                0x47u,
+                0x63u,
+                0x49u,
+                0x23u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x47, 0x63),
-            byteArrayOf(0x90.toByte(), 0x49, 0x23)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x47u, 0x63u),
+            ubyteArrayOf(0x90u, 0x49u, 0x23u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -256,14 +169,14 @@ class MidiMessageTranslatorTest {
     fun testRealTimeBefore() {
         val timestamp = 8375918L
         val original = arrayOf(
-            byteArrayOf(
-                MidiConstants.STATUS_TIMING_CLOCK, 0x90.toByte(),
-                0x45, 0x32
+            ubyteArrayOf(
+                MidiConstants.STATUS_TIMING_CLOCK, 0x90u,
+                0x45u, 0x32u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(MidiConstants.STATUS_TIMING_CLOCK),
-            byteArrayOf(0x90.toByte(), 0x45, 0x32)
+            ubyteArrayOf(MidiConstants.STATUS_TIMING_CLOCK),
+            ubyteArrayOf(0x90u, 0x45u, 0x32u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -274,14 +187,14 @@ class MidiMessageTranslatorTest {
     fun testRealTimeMiddle1() {
         val timestamp = 8375918L
         val original = arrayOf(
-            byteArrayOf(
-                0x90.toByte(), MidiConstants.STATUS_TIMING_CLOCK,
-                0x45, 0x32
+            ubyteArrayOf(
+                0x90u, MidiConstants.STATUS_TIMING_CLOCK,
+                0x45u, 0x32u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(MidiConstants.STATUS_TIMING_CLOCK),
-            byteArrayOf(0x90.toByte(), 0x45, 0x32)
+            ubyteArrayOf(MidiConstants.STATUS_TIMING_CLOCK),
+            ubyteArrayOf(0x90u, 0x45u, 0x32u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -291,14 +204,14 @@ class MidiMessageTranslatorTest {
     fun testRealTimeMiddle2() {
         val timestamp = 8375918L
         val original = arrayOf(
-            byteArrayOf(
-                0x90.toByte(), 0x45,
-                MidiConstants.STATUS_TIMING_CLOCK, 0x32
+            ubyteArrayOf(
+                0x90u, 0x45u,
+                MidiConstants.STATUS_TIMING_CLOCK, 0x32u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0xF8.toByte()),
-            byteArrayOf(0x90.toByte(), 0x45, 0x32)
+            ubyteArrayOf(0xF8u),
+            ubyteArrayOf(0x90u, 0x45u, 0x32u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -309,14 +222,14 @@ class MidiMessageTranslatorTest {
     fun testRealTimeAfter() {
         val timestamp = 8375918L
         val original = arrayOf(
-            byteArrayOf(
-                0x90.toByte(), 0x45, 0x32,
+            ubyteArrayOf(
+                0x90u, 0x45u, 0x32u,
                 MidiConstants.STATUS_TIMING_CLOCK
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0xF8.toByte())
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0xF8u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -327,14 +240,14 @@ class MidiMessageTranslatorTest {
     fun testPieces() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45),
-            byteArrayOf(0x32, 0x47),
-            byteArrayOf(0x63, 0x49, 0x23)
+            ubyteArrayOf(0x90u, 0x45u),
+            ubyteArrayOf(0x32u, 0x47u),
+            ubyteArrayOf(0x63u, 0x49u, 0x23u)
         )
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x47, 0x63),
-            byteArrayOf(0x90.toByte(), 0x49, 0x23)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x47u, 0x63u),
+            ubyteArrayOf(0x90u, 0x49u, 0x23u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -345,18 +258,18 @@ class MidiMessageTranslatorTest {
     fun testByByte() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(0x90.toByte()),
-            byteArrayOf(0x45),
-            byteArrayOf(0x32),
-            byteArrayOf(0x47),
-            byteArrayOf(0x63),
-            byteArrayOf(0x49),
-            byteArrayOf(0x23)
+            ubyteArrayOf(0x90u),
+            ubyteArrayOf(0x45u),
+            ubyteArrayOf(0x32u),
+            ubyteArrayOf(0x47u),
+            ubyteArrayOf(0x63u),
+            ubyteArrayOf(0x49u),
+            ubyteArrayOf(0x23u)
         )
         val expected = arrayOf(
-            byteArrayOf(0x90.toByte(), 0x45, 0x32),
-            byteArrayOf(0x90.toByte(), 0x47, 0x63),
-            byteArrayOf(0x90.toByte(), 0x49, 0x23)
+            ubyteArrayOf(0x90u, 0x45u, 0x32u),
+            ubyteArrayOf(0x90u, 0x47u, 0x63u),
+            ubyteArrayOf(0x90u, 0x49u, 0x23u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -366,14 +279,14 @@ class MidiMessageTranslatorTest {
     fun testControlChange() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(
-                MidiConstants.STATUS_CONTROL_CHANGE, 0x07, 0x52,
-                0x0A, 0x63
+            ubyteArrayOf(
+                MidiConstants.STATUS_CONTROL_CHANGE, 0x07u, 0x52u,
+                0x0Au, 0x63u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0xB0.toByte(), 0x07, 0x52),
-            byteArrayOf(0xB0.toByte(), 0x0A, 0x63)
+            ubyteArrayOf(0xB0u, 0x07u, 0x52u),
+            ubyteArrayOf(0xB0u, 0x0Au, 0x63u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -383,10 +296,10 @@ class MidiMessageTranslatorTest {
     fun testProgramChange() {
         val timestamp = 837518L
         val original =
-            arrayOf(byteArrayOf(MidiConstants.STATUS_PROGRAM_CHANGE, 0x05, 0x07))
+            arrayOf(ubyteArrayOf(MidiConstants.STATUS_PROGRAM_CHANGE, 0x05u, 0x07u))
         val expected = arrayOf(
-            byteArrayOf(0xC0.toByte(), 0x05),
-            byteArrayOf(0xC0.toByte(), 0x07)
+            ubyteArrayOf(0xC0u, 0x05u),
+            ubyteArrayOf(0xC0u, 0x07u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -397,19 +310,19 @@ class MidiMessageTranslatorTest {
     fun testAck() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(
-                MidiConstants.STATUS_PROGRAM_CHANGE, 0x05, 0x07,
-                MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7E, 0x03, 0x7F, 0x21,
-                0xF7.toByte(), MidiConstants.STATUS_CONTROL_CHANGE, 0x07, 0x52,
-                0x0A, 0x63
+            ubyteArrayOf(
+                MidiConstants.STATUS_PROGRAM_CHANGE, 0x05u, 0x07u,
+                MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7Eu, 0x03u, 0x7Fu, 0x21u,
+                0xF7u, MidiConstants.STATUS_CONTROL_CHANGE, 0x07u, 0x52u,
+                0x0Au, 0x63u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0xC0.toByte(), 0x05),
-            byteArrayOf(0xC0.toByte(), 0x07),
-            byteArrayOf(0xF0.toByte(), 0x7E, 0x03, 0x7F, 0x21, 0xF7.toByte()),
-            byteArrayOf(0xB0.toByte(), 0x07, 0x52),
-            byteArrayOf(0xB0.toByte(), 0x0A, 0x63)
+            ubyteArrayOf(0xC0u, 0x05u),
+            ubyteArrayOf(0xC0u, 0x07u),
+            ubyteArrayOf(0xF0u, 0x7Eu, 0x03u, 0x7Fu, 0x21u, 0xF7u),
+            ubyteArrayOf(0xB0u, 0x07u, 0x52u),
+            ubyteArrayOf(0xB0u, 0x0Au, 0x63u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -420,14 +333,14 @@ class MidiMessageTranslatorTest {
     fun testSplitSysEx() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7E),
-            byteArrayOf(0x03, 0x7F),
-            byteArrayOf(0x21, 0xF7.toByte())
+            ubyteArrayOf(MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7Eu),
+            ubyteArrayOf(0x03u, 0x7Fu),
+            ubyteArrayOf(0x21u, 0xF7u)
         )
         val expected = arrayOf(
-            byteArrayOf(0xF0.toByte(), 0x7E),
-            byteArrayOf(0x03, 0x7F),
-            byteArrayOf(0x21, 0xF7.toByte())
+            ubyteArrayOf(0xF0u, 0x7Eu),
+            ubyteArrayOf(0x03u, 0x7Fu),
+            ubyteArrayOf(0x21u, 0xF7u)
         )
         checkSequence(original, expected, timestamp)
     }
@@ -438,19 +351,18 @@ class MidiMessageTranslatorTest {
     fun testRealSysEx() {
         val timestamp = 837518L
         val original = arrayOf(
-            byteArrayOf(
-                MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7E,
-                0x03, MidiConstants.STATUS_TIMING_CLOCK, 0x7F, 0x21,
-                0xF7.toByte()
+            ubyteArrayOf(
+                MidiConstants.STATUS_SYSTEM_EXCLUSIVE, 0x7Eu,
+                0x03u, MidiConstants.STATUS_TIMING_CLOCK, 0x7Fu, 0x21u,
+                0xF7u
             )
         )
         val expected = arrayOf(
-            byteArrayOf(0xF0.toByte(), 0x7E, 0x03),
-            byteArrayOf(0xF8.toByte()),
-            byteArrayOf(0x7F, 0x21, 0xF7.toByte())
+            ubyteArrayOf(0xF0u, 0x7Eu, 0x03u),
+            ubyteArrayOf(0xF8u),
+            ubyteArrayOf(0x7Fu, 0x21u, 0xF7u)
         )
         checkSequence(original, expected, timestamp)
     }
-
 
 }

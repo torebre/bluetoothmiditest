@@ -54,9 +54,6 @@ dependencies {
     implementation 'androidx.recyclerview:recyclerview:1.2.1'
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-core:$kotlin_coroutines_version"
     implementation "org.jetbrains.kotlinx:kotlinx-coroutines-android:$kotlin_coroutines_version"
-//    implementation "com.android.support:appcompat-v7:28.0.0"
-//    implementation "com.android.support:recyclerview-v7:28.0.0"
-    // https://mvnrepository.com/artifact/com.google.code.gson/gson
     implementation group: 'com.google.code.gson', name: 'gson', version: '2.8.7'
     implementation 'com.jakewharton.timber:timber:4.7.1'
 

@@ -1,11 +1,11 @@
 package com.example.bluetoothmiditest
 
-internal enum class ChannelCommandName {
-    NOTE_OFF,
-    NOTE_ON,
-    POLY_TOUCH,
-    CONTROL,
-    PROGRAM,
-    PRESSURE,
-    BEND
+enum class ChannelCommandName {
+    NoteOff,
+    NoteOn,
+    PolyTouch,
+    Control,
+    Program,
+    Pressure,
+    Bend
 }

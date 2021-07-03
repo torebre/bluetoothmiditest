@@ -1,20 +1,20 @@
 package com.example.bluetoothmiditest
 
 enum class SystemCommandName {
-    SYS_EX,
-    TIME_CODE,
-    SONG_POS,
-    SONG_SEL,
+    SysEx,
+    TimeCode,
+    SongPos,
+    SongSel,
     F4,
     F5,
-    TUNE_REQ,
-    END_SYS_EX,
-    TIMING_CLOCK,
+    TuneReq,
+    EndSysex,
+    TimingClock,
     F9,
-    START,
-    CONTINUE,
-    STOP,
+    Start,
+    Continue,
+    Stop,
     FD,
-    ACTIVE_SENSING,
-    RESET
+    ActiveSensing,
+    Reset
 }

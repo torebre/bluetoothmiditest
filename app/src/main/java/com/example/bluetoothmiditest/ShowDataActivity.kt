@@ -156,12 +156,8 @@ class ShowDataActivity : AppCompatActivity() {
                             timestamp: Long
                         ) {
 
-                            Timber.i("Message: $msg")
-
                             msg?.let {
-
-                                Timber.i("Offset: $offset. Count: $count. Timestamp: $timestamp. Bytes in message: ${it.joinToString { it.toString() }}")
-
+                                Timber.d("Offset: $offset. Count: $count. Timestamp: $timestamp. Bytes in message: ${it.joinToString { it.toString() }}")
                                 midiMessageTranslator.onSend(msg, offset, count, timestamp)
                             }
 
