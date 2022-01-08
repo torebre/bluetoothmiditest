@@ -176,11 +176,13 @@ class ShowDataActivity : AppCompatActivity() {
 
 
     private fun saveData(uri: Uri) {
+        Timber.i("Saving MIDI data")
         dataStore.getData().takeIf { it.midiMessages.isNotEmpty() }?.let { midiTextData ->
+            Timber.i("Number of MIDI messages: ${midiTextData.midiMessages.size}")
             contentResolver.openOutputStream(uri)?.use { outputStream ->
                 BufferedOutputStream(outputStream).let { bufferedOutputStream ->
                     bufferedOutputStream.writer(StandardCharsets.UTF_8).use {
-                        Gson().toJson(midiTextData)
+                        it.write(Gson().toJson(midiTextData))
                     }
                 }
             }
