@@ -29,12 +29,12 @@ class MessageHandlingTest {
         val session = dataMemoryStore.getData()
 
         assertEquals(1, session.midiMessages.size)
-        session.midiMessages[0].let {
+        session.midiMessages[0].let { midiMessage ->
             assertEquals(
-                ChannelCommandName.NoteOn.name,
-                it.messageType
+                MidiCommand.NoteOn,
+                midiMessage.midiCommand
             )
-            assertEquals("72, 94", it.midiData)
+            assertEquals("72, 94", midiMessage.midiData)
         }
     }
 
@@ -54,12 +54,12 @@ class MessageHandlingTest {
         val session = dataMemoryStore.getData()
 
         assertEquals(1, session.midiMessages.size)
-        session.midiMessages[0].let {
+        session.midiMessages[0].let { midiMessage ->
             assertEquals(
-                ChannelCommandName.NoteOff.name,
-                it.messageType
+                MidiCommand.NoteOff,
+                midiMessage.midiCommand
             )
-            assertEquals("72, 93", it.midiData)
+            assertEquals("72, 93", midiMessage.midiData)
         }
     }
 

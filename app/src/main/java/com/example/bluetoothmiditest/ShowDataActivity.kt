@@ -18,6 +18,8 @@ import com.google.gson.Gson
 import timber.log.Timber
 import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 
 class ShowDataActivity : AppCompatActivity() {
@@ -25,6 +27,8 @@ class ShowDataActivity : AppCompatActivity() {
     companion object {
         const val DATA_STORE_STATE = "DataStoreState"
         const val BLUETOOTH_DEVICE = "BluetoothDevice"
+
+        private fun getDefaultTitle() = "midi_output_${LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}.json"
     }
 
     private lateinit var midiMessageHandler: MidiMessageHandler
@@ -80,7 +84,7 @@ class ShowDataActivity : AppCompatActivity() {
                     val createDocumentIntent = Intent(Intent.ACTION_CREATE_DOCUMENT).apply {
                         addCategory(Intent.CATEGORY_OPENABLE)
                         type = "application/text"
-                        putExtra(Intent.EXTRA_TITLE, "midi_output.txt")
+                        putExtra(Intent.EXTRA_TITLE, getDefaultTitle())
                     }
                     getFileUrl.launch(createDocumentIntent)
                 }
@@ -156,8 +160,8 @@ class ShowDataActivity : AppCompatActivity() {
                             timestamp: Long
                         ) {
 
-                            msg?.let {
-                                Timber.d("Offset: $offset. Count: $count. Timestamp: $timestamp. Bytes in message: ${it.joinToString { it.toString() }}")
+                            msg?.let { messageBytes ->
+                                Timber.d("Offset: $offset. Count: $count. Timestamp: $timestamp. Bytes in message: ${messageBytes.joinToString { messageBytes.toString() }}")
                                 midiMessageTranslator.onSend(msg, offset, count, timestamp)
                             }
 
@@ -188,5 +192,8 @@ class ShowDataActivity : AppCompatActivity() {
             }
         }
     }
+
+
+
 
 }

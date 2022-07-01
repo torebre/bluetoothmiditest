@@ -54,18 +54,18 @@ class MidiMessageHandlerImpl(
             return MidiMessage(statusAsString, midiData, channel, timestamp)
         }
 
-        private fun getName(status: Int): String {
+        private fun getName(status: Int): MidiCommand {
             return when {
                 status >= 0xF0 -> {
                     val index = status and 0x0F
-                    SystemCommandName.values()[index].name
+                    MidiCommand.values()[index]
                 }
                 status >= 0x80 -> {
                     val index = status shr 4 and 0x07
-                    ChannelCommandName.values()[index].name
+                    MidiCommand.values()[index + NUMBER_OF_SYSTEM_COMMANDS]
                 }
                 else -> {
-                    "data"
+                   MidiCommand.Data
                 }
             }
         }
