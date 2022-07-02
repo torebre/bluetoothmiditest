@@ -70,6 +70,8 @@ class MainActivity : AppCompatActivity() {
             registerForActivityResult(ActivityResultContracts.StartActivityForResult()) {
                 // TODO Is it necessary to do anything here?
 
+                Timber.i("Tst50: $it")
+
             }.launch(enableBtIntent)
         }
 
@@ -124,10 +126,7 @@ class MainActivity : AppCompatActivity() {
         deviceView.adapter = deviceListAdapter
 
         deviceListViewModel.deviceLiveData.observe(this) { liveData ->
-            Timber.i("Test23: ${liveData.size}")
             deviceListAdapter.submitList(liveData)
-
-            Timber.i("Test30: ${deviceView.size}")
         }
 
 
