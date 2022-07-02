@@ -4,6 +4,9 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.TextView
+import androidx.recyclerview.selection.ItemDetailsLookup
+import androidx.recyclerview.selection.ItemKeyProvider
+import androidx.recyclerview.selection.SelectionTracker
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
@@ -14,18 +17,44 @@ import timber.log.Timber
 class DeviceListAdapter :
     ListAdapter<BluetoothDeviceData, DeviceListAdapter.DeviceViewHolder>(DeviceListDiffCallback) {
 
+    var tracker: SelectionTracker<String>? = null
+
+//    init {
+//        setHasStableIds(true)
+//    }
+
+//    override fun getItem(position: Int): BluetoothDeviceData {
+//       DeviceDataSource.getDataSource().getDeviceList().value
+//    }
 
     class DeviceViewHolder(view: View) : RecyclerView.ViewHolder(view) {
         private val deviceItemTextView: TextView = view.findViewById(R.id.deviceItemText)
         private var currentDevice: BluetoothDeviceData? = null
 
 
-        fun bind(deviceData: BluetoothDeviceData) {
+        fun bind(deviceData: BluetoothDeviceData, isActivated: Boolean) {
 
             Timber.i("Test24")
 
             currentDevice = deviceData
             deviceItemTextView.text = deviceData.bluetoothDevice.name
+            itemView.isActivated = isActivated
+        }
+
+        fun getItemDetails(): ItemDetailsLookup.ItemDetails<String>? {
+            if (currentDevice == null) {
+                return null
+            }
+
+            return object : ItemDetailsLookup.ItemDetails<String>() {
+                override fun getPosition(): Int {
+                    return bindingAdapterPosition
+                }
+
+                override fun getSelectionKey(): String? {
+                    return currentDevice?.bluetoothDevice?.address
+                }
+            }
         }
 
     }
@@ -35,14 +64,40 @@ class DeviceListAdapter :
         Timber.i("Test25")
 
         return DeviceViewHolder(
-            LayoutInflater.from(parent.context).inflate(R.layout.device_item, parent, false))
+            LayoutInflater.from(parent.context).inflate(R.layout.device_item, parent, false)
+        )
     }
 
     override fun onBindViewHolder(holder: DeviceViewHolder, position: Int) {
 
         Timber.i("Test26")
 
-        holder.bind(getItem(position))
+        tracker?.let { selectionTracker ->
+            getItem(position).let {
+                holder.bind(it, selectionTracker.isSelected(it.bluetoothDevice.address))
+            }
+        }
+
+    }
+
+    fun getPosition(key: String): Int? {
+        return DeviceDataSource.getDataSource().getDeviceList()
+            .value?.indexOfFirst { it.bluetoothDevice.address == key }
+    }
+
+
+    class MyItemKeyProvider(private val rvAdapter: DeviceListAdapter) :
+        ItemKeyProvider<String>(SCOPE_CACHED) {
+        override fun getKey(position: Int): String =
+            rvAdapter.getItem(position).bluetoothDevice.address
+
+        override fun getPosition(key: String): Int {
+            val position = rvAdapter.getPosition(key)
+
+            Timber.i("Test60: ${position}")
+
+            return position ?: RecyclerView.NO_POSITION
+        }
     }
 
 

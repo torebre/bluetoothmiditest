@@ -20,12 +20,11 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import androidx.core.view.size
+import androidx.recyclerview.selection.SelectionPredicates
+import androidx.recyclerview.selection.SelectionTracker
+import androidx.recyclerview.selection.StorageStrategy
 import androidx.recyclerview.widget.RecyclerView
-import com.example.bluetoothmiditest.deviceList.DeviceDataSource
-import com.example.bluetoothmiditest.deviceList.DeviceListAdapter
-import com.example.bluetoothmiditest.deviceList.DeviceListViewModel
-import com.example.bluetoothmiditest.deviceList.DeviceListViewModelFactory
+import com.example.bluetoothmiditest.deviceList.*
 import timber.log.Timber
 import java.util.*
 
@@ -58,6 +57,8 @@ class MainActivity : AppCompatActivity() {
         get() = !isEnabled
 
     private lateinit var scanButton: Button
+
+    private var tracker: SelectionTracker<String>? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -129,7 +130,19 @@ class MainActivity : AppCompatActivity() {
             deviceListAdapter.submitList(liveData)
         }
 
-
+        tracker = SelectionTracker.Builder(
+            "selection",
+            deviceView,
+            DeviceListAdapter.MyItemKeyProvider(deviceListAdapter),
+            DeviceDetailLookup(deviceView),
+            StorageStrategy.createStringStorage()
+        ).withSelectionPredicate(SelectionPredicates.createSelectSingleAnything()).build()
+            .also { selectionTracker ->
+                savedInstanceState?.let { savedState ->
+                    selectionTracker.onRestoreInstanceState(savedState)
+                }
+                deviceListAdapter.tracker = selectionTracker
+            }
     }
 
     private fun toggleScanningAndUpdateButtonText() {
@@ -140,17 +153,16 @@ class MainActivity : AppCompatActivity() {
 
         Timber.i("Do scan: ${doScan}")
 
-        if(doScan == isScanning) {
+        if (doScan == isScanning) {
             return
         }
 
-        if(doScan) {
+        if (doScan) {
             Timber.i("Starting scanning")
 
             BluetoothAdapter.getDefaultAdapter()?.let { scanLeDevices(it) }
             scanButton.setText(R.string.stop)
-        }
-        else {
+        } else {
             Timber.i("Stopping scanning")
 
             stopScanning()
@@ -242,5 +254,6 @@ class MainActivity : AppCompatActivity() {
             Timber.e("Scan failed. Error code: $errorCode")
         }
     }
+
 
 }
