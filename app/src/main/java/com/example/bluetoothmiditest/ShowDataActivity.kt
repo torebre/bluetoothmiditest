@@ -13,6 +13,8 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.bluetoothmiditest.midi.MidiMessageTranslator
+import com.example.bluetoothmiditest.storage.DataMemoryStore
 import com.example.bluetoothmiditest.storage.Session
 import com.google.gson.Gson
 import timber.log.Timber

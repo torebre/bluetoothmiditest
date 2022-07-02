@@ -2,6 +2,8 @@ package com.example.bluetoothmiditest
 
 import com.example.bluetoothmiditest.MidiMessageTestData.testNoteOnMessage
 import com.example.bluetoothmiditest.MidiMessageTestData.testNoteOffMessage
+import com.example.bluetoothmiditest.midi.MidiMessageTranslator
+import com.example.bluetoothmiditest.storage.DataMemoryStore
 import org.junit.Before
 import org.junit.Test
 import timber.log.Timber

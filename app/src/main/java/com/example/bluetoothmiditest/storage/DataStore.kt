@@ -1,4 +1,4 @@
-package com.example.bluetoothmiditest
+package com.example.bluetoothmiditest.storage
 
 import com.example.bluetoothmiditest.storage.MidiMessage
 import com.example.bluetoothmiditest.storage.Session

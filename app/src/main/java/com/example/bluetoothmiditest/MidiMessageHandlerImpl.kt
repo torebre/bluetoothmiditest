@@ -1,5 +1,7 @@
 package com.example.bluetoothmiditest
 
+import com.example.bluetoothmiditest.midi.getBytesPerMessage
+import com.example.bluetoothmiditest.storage.DataStore
 import com.example.bluetoothmiditest.storage.MidiMessage
 import timber.log.Timber
 import java.io.Closeable
@@ -43,7 +45,7 @@ class MidiMessageHandlerImpl(
             Timber.i("Status byte: $statusByte. Status: $status")
 
             val statusAsString = getName(status)
-            val numData = MidiConstants.getBytesPerMessage(statusByte.toInt()) - 1
+            val numData = getBytesPerMessage(statusByte.toInt()) - 1
             val channel = if (status in 0x80..0xef) {
                 status and 0x0F
             } else {

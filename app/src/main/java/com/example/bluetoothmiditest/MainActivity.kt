@@ -16,9 +16,16 @@ import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.Spinner
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.size
+import androidx.recyclerview.widget.RecyclerView
+import com.example.bluetoothmiditest.deviceList.DeviceDataSource
+import com.example.bluetoothmiditest.deviceList.DeviceListAdapter
+import com.example.bluetoothmiditest.deviceList.DeviceListViewModel
+import com.example.bluetoothmiditest.deviceList.DeviceListViewModelFactory
 import timber.log.Timber
 import java.util.*
 
@@ -43,27 +50,20 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var spinnerAdapterBluetooth: ArrayAdapter<BluetoothDeviceData>
 
+    private val deviceListViewModel by viewModels<DeviceListViewModel> {
+        DeviceListViewModelFactory()
+    }
+
     private val BluetoothAdapter.isDisabled: Boolean
         get() = !isEnabled
 
+    private lateinit var scanButton: Button
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val permissionCheck = ContextCompat.checkSelfPermission(
-            this,
-            Manifest.permission.ACCESS_FINE_LOCATION
-        )
-
-        Timber.i("Has ACCESS_FINE_LOCATION permission: $permissionCheck")
-        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
-            // ask permissions here using below code
-            ActivityCompat.requestPermissions(
-                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
-                2
-            )
-        }
+        requestPermission()
 
         BluetoothAdapter.getDefaultAdapter()?.takeIf { it.isDisabled }?.apply {
             val enableBtIntent = Intent(BluetoothAdapter.ACTION_REQUEST_ENABLE)
@@ -104,32 +104,74 @@ class MainActivity : AppCompatActivity() {
                 position: Int,
                 id: Long
             ) {
-                stopScanning()
+                toggleScanningAndUpdateButtonText(false)
                 spinnerAdapterBluetooth.getItem(position)?.let {
                     currentlySelectedBluetoothDevice = it
                     connectButton.isEnabled = true
-
                 }
             }
         }
 
         spinnerBluetooth.adapter = spinnerAdapterBluetooth
 
-        val scanButton = findViewById<Button>(R.id.btnScan)
+        scanButton = findViewById(R.id.btnScan)
         scanButton.setOnClickListener {
-            if (isScanning) {
+            toggleScanningAndUpdateButtonText()
+        }
 
-                Timber.i("Stopping scanning")
+        val deviceView = findViewById<RecyclerView>(R.id.deviceView)
+        val deviceListAdapter = DeviceListAdapter()
+        deviceView.adapter = deviceListAdapter
 
-                stopScanning()
-                scanButton.setText(R.string.scan)
-            } else {
+        deviceListViewModel.deviceLiveData.observe(this) { liveData ->
+            Timber.i("Test23: ${liveData.size}")
+            deviceListAdapter.submitList(liveData)
 
-                Timber.i("Starting scanning")
+            Timber.i("Test30: ${deviceView.size}")
+        }
 
-                BluetoothAdapter.getDefaultAdapter()?.let { scanLeDevices(it) }
-                scanButton.setText(R.string.stop)
-            }
+
+    }
+
+    private fun toggleScanningAndUpdateButtonText() {
+        toggleScanningAndUpdateButtonText(!isScanning)
+    }
+
+    private fun toggleScanningAndUpdateButtonText(doScan: Boolean) {
+
+        Timber.i("Do scan: ${doScan}")
+
+        if(doScan == isScanning) {
+            return
+        }
+
+        if(doScan) {
+            Timber.i("Starting scanning")
+
+            BluetoothAdapter.getDefaultAdapter()?.let { scanLeDevices(it) }
+            scanButton.setText(R.string.stop)
+        }
+        else {
+            Timber.i("Stopping scanning")
+
+            stopScanning()
+            scanButton.setText(R.string.scan)
+        }
+    }
+
+    private fun requestPermission() {
+        val permissionCheck = ContextCompat.checkSelfPermission(
+            this,
+            Manifest.permission.ACCESS_FINE_LOCATION
+        )
+
+        Timber.i("Has ACCESS_FINE_LOCATION permission: $permissionCheck")
+        if (permissionCheck != PackageManager.PERMISSION_GRANTED) {
+            // ask permissions here using below code
+            ActivityCompat.requestPermissions(
+                this, arrayOf(Manifest.permission.ACCESS_FINE_LOCATION),
+                2
+            )
         }
     }
 
@@ -160,7 +202,6 @@ class MainActivity : AppCompatActivity() {
 
         private val foundBluetoothDevices = mutableSetOf<BluetoothDeviceData>()
 
-
         override fun onScanResult(
             callbackType: Int,
             result: ScanResult?
@@ -174,6 +215,7 @@ class MainActivity : AppCompatActivity() {
                             spinnerAdapterBluetooth.add(it)
                             spinnerAdapterBluetooth.notifyDataSetChanged()
                         }
+                        DeviceDataSource.getDataSource().insertDevice(it)
                     }
                 }
             }
@@ -190,12 +232,14 @@ class MainActivity : AppCompatActivity() {
                             spinnerAdapterBluetooth.add(bluetoothDeviceData)
                         }
                         spinnerAdapterBluetooth.notifyDataSetChanged()
+                        DeviceDataSource.getDataSource().insertDevice(bluetoothDeviceData)
                     }
                 }
             }
         }
 
         override fun onScanFailed(errorCode: Int) {
+            isScanning = false
             Timber.e("Scan failed. Error code: $errorCode")
         }
     }

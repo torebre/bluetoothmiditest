@@ -10,43 +10,61 @@
         android:id="@+id/btnScan"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="424dp"
+        android:layout_marginBottom="76dp"
         android:text="@string/scan"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.529"
+        app:layout_constraintHorizontal_bias="0.462"
         app:layout_constraintStart_toStartOf="parent" />
 
     <TextView
         android:id="@+id/lblBluetoothMidiDevices"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="108dp"
         android:text="Bluetooth MIDI devices"
-        app:layout_constraintBottom_toTopOf="@+id/spinnerBluetoothMidiDevices"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="0.498"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <Spinner
         android:id="@+id/spinnerBluetoothMidiDevices"
         android:layout_width="407dp"
         android:layout_height="wrap_content"
-        android:layout_marginTop="14dp"
-        android:layout_marginEnd="1dp"
+        android:layout_marginTop="16dp"
         app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/lblBluetoothMidiDevices" />
 
     <Button
         android:id="@+id/btnConnect"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginTop="140dp"
+        android:layout_marginTop="16dp"
         android:text="@string/connect"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintHorizontal_bias="0.529"
+        app:layout_constraintHorizontal_bias="0.413"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/btnScan" />
+        app:layout_constraintTop_toBottomOf="@+id/deviceView" />
+
+    <androidx.recyclerview.widget.RecyclerView
+        android:id="@+id/deviceView"
+        android:layout_width="0dp"
+        android:layout_height="157dp"
+        android:layout_marginTop="16dp"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/deviceListInformation" />
+
+    <TextView
+        android:id="@+id/deviceListInformation"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="16dp"
+        android:text="Found devices"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/spinnerBluetoothMidiDevices" />
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -1,5 +1,6 @@
 package com.example.bluetoothmiditest
 
+import com.example.bluetoothmiditest.midi.MidiMessageTranslator
 import org.junit.Assert.assertEquals
 import org.junit.Before
 import org.junit.Test

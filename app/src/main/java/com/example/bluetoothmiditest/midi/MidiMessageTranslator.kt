@@ -1,6 +1,7 @@
-package com.example.bluetoothmiditest
+package com.example.bluetoothmiditest.midi
 
 import android.media.midi.MidiReceiver
+import com.example.bluetoothmiditest.MidiMessageHandler
 
 
 /**
@@ -48,7 +49,7 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
                     // Channel message
                     runningStatus = currentByte
                     currentCount = 1
-                    needed = MidiConstants.getBytesPerMessage(currentInt.toInt()) - 1
+                    needed = getBytesPerMessage(currentInt.toInt()) - 1
                 } else if (currentInt < 0xF8u) {
                     // System common
                     if (currentInt == 0xF0u) {
@@ -71,7 +72,7 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
                         buffer[0] = currentByte
                         runningStatus = 0u
                         currentCount = 1
-                        needed = MidiConstants.getBytesPerMessage(currentInt.toInt()) - 1
+                        needed = getBytesPerMessage(currentInt.toInt()) - 1
                     }
                 } else {
                     // Real-time
@@ -95,7 +96,7 @@ class MidiMessageTranslator(private val receiver: MidiMessageHandler): MidiRecei
                             buffer[0] = runningStatus
                         }
                         receiver.send(buffer, 0, currentCount, timestamp)
-                        needed = MidiConstants.getBytesPerMessage(buffer[0].toInt()) - 1
+                        needed = getBytesPerMessage(buffer[0].toInt()) - 1
                         currentCount = 1
                     }
                 }

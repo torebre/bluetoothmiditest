@@ -1,7 +1,4 @@
-package com.example.bluetoothmiditest
-
-import com.example.bluetoothmiditest.storage.MidiMessage
-import com.example.bluetoothmiditest.storage.Session
+package com.example.bluetoothmiditest.storage
 
 
 class DataMemoryStore(session: Session? = null) : DataStore {
