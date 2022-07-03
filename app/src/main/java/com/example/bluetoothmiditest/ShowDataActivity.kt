@@ -13,6 +13,7 @@ import android.widget.Button
 import android.widget.TextView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
+import com.example.bluetoothmiditest.midi.MidiMessageHandler
 import com.example.bluetoothmiditest.midi.MidiMessageTranslator
 import com.example.bluetoothmiditest.storage.DataMemoryStore
 import com.example.bluetoothmiditest.storage.Session
@@ -24,13 +25,18 @@ import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 
+/**
+ * Shows the incoming MIDI messages from a connected Bluetooth device. Allows the user
+ * to save the messages.
+ */
 class ShowDataActivity : AppCompatActivity() {
 
     companion object {
         const val DATA_STORE_STATE = "DataStoreState"
         const val BLUETOOTH_DEVICE = "BluetoothDevice"
 
-        private fun getDefaultTitle() = "midi_output_${LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}.json"
+        private fun getDefaultTitle() =
+            "midi_output_${LocalDateTime.now().format(DateTimeFormatter.ISO_DATE_TIME)}.json"
     }
 
     private lateinit var midiMessageHandler: MidiMessageHandler
@@ -194,8 +200,6 @@ class ShowDataActivity : AppCompatActivity() {
             }
         }
     }
-
-
 
 
 }

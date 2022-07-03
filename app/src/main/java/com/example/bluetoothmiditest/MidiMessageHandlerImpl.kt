@@ -1,5 +1,6 @@
 package com.example.bluetoothmiditest
 
+import com.example.bluetoothmiditest.midi.MidiMessageHandler
 import com.example.bluetoothmiditest.midi.getBytesPerMessage
 import com.example.bluetoothmiditest.storage.DataStore
 import com.example.bluetoothmiditest.storage.MidiMessage

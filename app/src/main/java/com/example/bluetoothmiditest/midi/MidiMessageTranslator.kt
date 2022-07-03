@@ -1,7 +1,6 @@
 package com.example.bluetoothmiditest.midi
 
 import android.media.midi.MidiReceiver
-import com.example.bluetoothmiditest.MidiMessageHandler
 
 
 /**

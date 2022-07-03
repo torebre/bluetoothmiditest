@@ -13,9 +13,7 @@ class BluetoothMidiApplication: Application() {
         if (BuildConfig.DEBUG) {
             Timber.plant(Timber.DebugTree())
         }
-
     }
-
 
 
 }

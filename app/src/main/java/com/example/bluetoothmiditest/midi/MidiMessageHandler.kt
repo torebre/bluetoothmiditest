@@ -1,4 +1,4 @@
-package com.example.bluetoothmiditest
+package com.example.bluetoothmiditest.midi
 
 
 /**

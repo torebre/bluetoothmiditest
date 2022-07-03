@@ -1,5 +1,7 @@
 package com.example.bluetoothmiditest
 
+import com.example.bluetoothmiditest.midi.MidiMessageHandler
+
 @ExperimentalUnsignedTypes
 internal class DummyMidiReceiver : MidiMessageHandler {
     val receivedMessages = mutableListOf<MidiMessage>()
