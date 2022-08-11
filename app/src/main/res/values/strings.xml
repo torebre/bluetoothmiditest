@@ -12,4 +12,5 @@
     <string name="stop">Stop scanning</string>
     <string name="connect">Connect</string>
     <string name="save">Save</string>
+    <string name="note">Note</string>
 </resources>

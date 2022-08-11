@@ -1,7 +1,7 @@
 package com.example.bluetoothmiditest.storage
 
 
-class DataMemoryStore(session: Session? = null) : DataStore {
+class DataMemoryStore(session: Session? = null) : MidiMessageListener {
 
     private val session: Session = session ?: Session()
 
@@ -10,7 +10,7 @@ class DataMemoryStore(session: Session? = null) : DataStore {
     }
 
 
-    override fun getData() = session
+    fun getData() = session
 
 
     override fun close() {

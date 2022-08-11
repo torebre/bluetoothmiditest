@@ -16,6 +16,8 @@ import androidx.appcompat.app.AppCompatActivity
 import com.example.bluetoothmiditest.midi.MidiMessageHandler
 import com.example.bluetoothmiditest.midi.MidiMessageTranslator
 import com.example.bluetoothmiditest.storage.DataMemoryStore
+import com.example.bluetoothmiditest.storage.MidiMessage
+import com.example.bluetoothmiditest.storage.MidiMessageListener
 import com.example.bluetoothmiditest.storage.Session
 import com.google.gson.Gson
 import timber.log.Timber
@@ -59,10 +61,42 @@ class ShowDataActivity : AppCompatActivity() {
 
         dataStore = DataMemoryStore(savedSession)
 
-        midiMessageHandler = MidiMessageHandlerImpl(dataStore).also { it.store(true) }
+        setContentView(R.layout.show_midi_data)
+
+        val noteView = findViewById<TextView>(R.id.noteData)
+
+        val notesOn = mutableListOf<String>()
+        midiMessageHandler = MidiMessageHandlerImpl().also {
+           it.addMidiMessageListener(dataStore)
+
+            it.addMidiMessageListener(object: MidiMessageListener {
+                override fun store(midiMessage: MidiMessage) {
+                    runOnUiThread {
+                        when(midiMessage.midiCommand) {
+                            MidiCommand.NoteOn -> {
+                                notesOn.add(midiMessage.midiData)
+                            }
+                            MidiCommand.NoteOff -> {
+                                notesOn.remove(midiMessage.midiData)
+                            }
+                            else -> {
+                               // Do nothing
+                            }
+                        }
+                        noteView.text = notesOn.joinToString()
+                    }
+                }
+
+                override fun close() {
+                    // Nothing to close
+                }
+
+            })
+
+        }
+
         midiMessageTranslator = MidiMessageTranslator(midiMessageHandler)
 
-        setContentView(R.layout.show_midi_data)
 
         val dataView = findViewById<TextView>(R.id.midiData)
 
@@ -82,8 +116,11 @@ class ShowDataActivity : AppCompatActivity() {
             return
         }
 
-        bluetoothDevice?.let {
-            setupBluetoothConnection(it, dataView)
+
+        bluetoothDevice?.let { bluetoothDevice ->
+            openBluetoothMidiDevice(bluetoothDevice, dataView,
+                (applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager)
+            )
         }
 
         findViewById<Button>(R.id.btnSave).apply {
@@ -100,13 +137,6 @@ class ShowDataActivity : AppCompatActivity() {
         }
     }
 
-    private fun setupBluetoothConnection(bluetoothDevice: BluetoothDevice, dataView: TextView) {
-        val midiManager =
-            applicationContext.getSystemService(Context.MIDI_SERVICE) as MidiManager
-        openBluetoothMidiDevice(bluetoothDevice, dataView, midiManager)
-
-    }
-
     override fun onSaveInstanceState(outState: Bundle) {
         outState.run {
             putSerializable(DATA_STORE_STATE, dataStore.getData())
@@ -116,7 +146,6 @@ class ShowDataActivity : AppCompatActivity() {
             }
         }
         super.onSaveInstanceState(outState)
-
     }
 
     override fun onDestroy() {

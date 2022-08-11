@@ -8,10 +8,6 @@ package com.example.bluetoothmiditest.midi
 @ExperimentalUnsignedTypes
 interface MidiMessageHandler {
 
-    fun store(store: Boolean)
-
-    fun isStoring(): Boolean
-
     fun send(msg: UByteArray, offset: Int, count: Int, timestamp: Long)
 
     fun close()

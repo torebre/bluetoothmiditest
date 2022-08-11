@@ -2,11 +2,8 @@ package com.example.bluetoothmiditest.storage
 
 import java.io.Closeable
 
-interface DataStore: Closeable {
-
+interface MidiMessageListener: Closeable {
 
     fun store(midiMessage: MidiMessage)
-
-    fun getData(): Session
 
 }

@@ -2,20 +2,27 @@ package com.example.bluetoothmiditest
 
 import com.example.bluetoothmiditest.midi.MidiMessageHandler
 import com.example.bluetoothmiditest.midi.getBytesPerMessage
-import com.example.bluetoothmiditest.storage.DataStore
+import com.example.bluetoothmiditest.storage.MidiMessageListener
 import com.example.bluetoothmiditest.storage.MidiMessage
 import timber.log.Timber
 import java.io.Closeable
+import java.util.concurrent.CopyOnWriteArrayList
 
 
-class MidiMessageHandlerImpl(
-    private val dataStore: DataStore,
-    private var storeMode: Boolean = false
-) : MidiMessageHandler, Closeable {
+class MidiMessageHandlerImpl: MidiMessageHandler, Closeable {
+
+    private val midiMessageListeners = CopyOnWriteArrayList<MidiMessageListener>()
+
+    fun addMidiMessageListener(dataStore: MidiMessageListener) {
+        midiMessageListeners.add(dataStore)
+    }
+
+    fun removeMidiMessageListener(dataStore: MidiMessageListener) {
+        midiMessageListeners.remove(dataStore)
+    }
 
     @ExperimentalUnsignedTypes
     override fun send(msg: UByteArray, offset: Int, count: Int, timestamp: Long) {
-        if (storeMode) {
             Timber.d(
                 "Translated MIDI message: ${
                     translateMidiMessage(
@@ -24,15 +31,10 @@ class MidiMessageHandlerImpl(
                 }"
             )
 
-            dataStore.store(translateMidiMessage(msg, offset, timestamp))
-        }
+            midiMessageListeners.forEach {
+                it.store(translateMidiMessage(msg, offset, timestamp))
+            }
     }
-
-    override fun store(store: Boolean) {
-        this.storeMode = store
-    }
-
-    override fun isStoring() = storeMode
 
 
     companion object {
@@ -75,7 +77,8 @@ class MidiMessageHandlerImpl(
     }
 
     override fun close() {
-        dataStore.close()
+        midiMessageListeners.forEach { it.close() }
+        midiMessageListeners.clear()
     }
 
 }
