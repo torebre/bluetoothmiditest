@@ -15,6 +15,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import com.example.bluetoothmiditest.midi.MidiMessageHandler
 import com.example.bluetoothmiditest.midi.MidiMessageTranslator
+import com.example.bluetoothmiditest.midi.MidiUtilities
 import com.example.bluetoothmiditest.storage.DataMemoryStore
 import com.example.bluetoothmiditest.storage.MidiMessage
 import com.example.bluetoothmiditest.storage.MidiMessageListener
@@ -25,6 +26,7 @@ import java.io.BufferedOutputStream
 import java.nio.charset.StandardCharsets
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
+import java.util.logging.Logger
 
 
 /**
@@ -72,12 +74,13 @@ class ShowDataActivity : AppCompatActivity() {
             it.addMidiMessageListener(object: MidiMessageListener {
                 override fun store(midiMessage: MidiMessage) {
                     runOnUiThread {
+                        // For note on and note off the Midi data is a string with the pitch and velocity
                         when(midiMessage.midiCommand) {
                             MidiCommand.NoteOn -> {
-                                notesOn.add(midiMessage.midiData)
+                                notesOn.add(MidiUtilities.pitchToNoteAndOctave(midiMessage.midiData.substringBefore(",").trim().toInt()).let { noteData -> "${noteData.first} (${noteData.second})" })
                             }
                             MidiCommand.NoteOff -> {
-                                notesOn.remove(midiMessage.midiData)
+                                notesOn.remove(MidiUtilities.pitchToNoteAndOctave(midiMessage.midiData.substringBefore(",").trim().toInt()).let { noteData -> "${noteData.first} (${noteData.second})" })
                             }
                             else -> {
                                // Do nothing
